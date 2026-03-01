@@ -28,9 +28,10 @@ Flutter mobile app for [LatinTerritory](https://www.latinterritory.com) — a co
 git clone <repo-url>
 cd latinterritory-mobile
 
-# 2. Copy environment files
+# 2. Copy environment files (in project root)
 cp .env.development.example .env.development
-# Edit .env.development with your values
+cp .env.production.example .env.production
+# Edit with your BASE_URL and Google OAuth client IDs
 
 # 3. Install dependencies
 flutter pub get
