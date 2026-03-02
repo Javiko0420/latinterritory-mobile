@@ -1,12 +1,15 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/constants/legal_documents.dart';
 import 'package:latinterritory/features/auth/data/models/auth_models.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
+import 'package:latinterritory/shared/widgets/legal_document_sheet.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
 import 'package:latinterritory/shared/widgets/lt_text_field.dart';
 
@@ -34,13 +37,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   static const _termsVersion = '1.0';
   static const _privacyVersion = '1.0';
 
+  // Gesture recognizers for legal document links.
+  final _termsRecognizer = TapGestureRecognizer();
+  final _privacyRecognizer = TapGestureRecognizer();
+  final _contractRecognizer = TapGestureRecognizer();
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    _contractRecognizer.dispose();
     super.dispose();
+  }
+
+  TextSpan _buildLegalSpan({
+    required String text,
+    required TapGestureRecognizer recognizer,
+  }) {
+    return TextSpan(
+      text: text,
+      style: const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w600,
+        decoration: TextDecoration.underline,
+        decorationColor: AppColors.primary,
+      ),
+      recognizer: recognizer,
+    );
   }
 
   Future<void> _selectDateOfBirth() async {
@@ -74,7 +101,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (!_acceptedTerms) {
       context.showErrorSnackBar(
-        'You must accept the Terms of Service and Privacy Policy.',
+        'You must accept the Terms of Use, Privacy Policy, and Registration Agreement.',
       );
       return;
     }
@@ -183,7 +210,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                         ),
-                        Icon(
+                        const Icon(
                           Icons.calendar_today_outlined,
                           color: AppColors.textTertiary,
                           size: AppDimensions.iconSm,
@@ -263,44 +290,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(width: AppDimensions.sm),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: _isLoading
-                            ? null
-                            : () {
-                                setState(
-                                    () => _acceptedTerms = !_acceptedTerms);
-                              },
-                        child: Text.rich(
-                          TextSpan(
-                            text: 'I accept the ',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            children: [
-                              TextSpan(
-                                text: 'User Agreement',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const TextSpan(text: ', '),
-                              TextSpan(
-                                text: 'Terms of Service',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const TextSpan(text: ', and '),
-                              TextSpan(
-                                text: 'Privacy Policy',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const TextSpan(text: '.'),
-                            ],
-                          ),
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'By creating my account, I confirm that I am 16 years or older and accept the ',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          children: [
+                            _buildLegalSpan(
+                              text: 'Terms of Use',
+                              recognizer: _termsRecognizer
+                                ..onTap = () => LegalDocumentSheet.show(
+                                      context,
+                                      title: LegalDocuments.termsTitle,
+                                      content: LegalDocuments.termsContent,
+                                    ),
+                            ),
+                            const TextSpan(text: ', the '),
+                            _buildLegalSpan(
+                              text: 'Privacy Policy',
+                              recognizer: _privacyRecognizer
+                                ..onTap = () => LegalDocumentSheet.show(
+                                      context,
+                                      title: LegalDocuments.privacyTitle,
+                                      content: LegalDocuments.privacyContent,
+                                    ),
+                            ),
+                            const TextSpan(text: ', and the '),
+                            _buildLegalSpan(
+                              text: 'Registration & Use Agreement',
+                              recognizer: _contractRecognizer
+                                ..onTap = () => LegalDocumentSheet.show(
+                                      context,
+                                      title: LegalDocuments.contractTitle,
+                                      content: LegalDocuments.contractContent,
+                                    ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
                         ),
                       ),
                     ),
