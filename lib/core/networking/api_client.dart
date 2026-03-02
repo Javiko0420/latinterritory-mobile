@@ -39,6 +39,7 @@ class ApiClient {
     dio.interceptors.addAll([
       AuthInterceptor(
         storage: storage,
+        mainDio: dio,
         refreshDio: refreshDio,
         onForceLogout: onForceLogout,
       ),

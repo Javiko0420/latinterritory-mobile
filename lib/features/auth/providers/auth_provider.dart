@@ -56,7 +56,6 @@ class AuthState {
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
-    // On app start, try to restore session from stored token.
     final repo = ref.read(authRepositoryProvider);
     final user = await repo.restoreSession();
     return user != null ? AuthState(user: user) : const AuthState();

@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:latinterritory/core/config/app_config.dart';
 import 'package:latinterritory/core/constants/api_endpoints.dart';
 import 'package:latinterritory/core/storage/secure_storage.dart';
+import 'package:latinterritory/shared/utils/logger.dart';
 
 /// Dio interceptor that handles JWT authentication.
 ///
@@ -12,19 +13,28 @@ import 'package:latinterritory/core/storage/secure_storage.dart';
 /// 3. On refresh failure, triggers logout via [onForceLogout].
 ///
 /// Uses a separate [Dio] instance for refresh calls to avoid
-/// interceptor loops.
+/// interceptor loops. Retries go through the main [Dio] so the
+/// full interceptor chain (including this one) attaches the
+/// refreshed token the same way it does for any normal request.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required SecureStorageService storage,
+    required Dio mainDio,
     required Dio refreshDio,
     required VoidCallback onForceLogout,
   })  : _storage = storage,
+        _mainDio = mainDio,
         _refreshDio = refreshDio,
         _onForceLogout = onForceLogout;
 
   final SecureStorageService _storage;
+  final Dio _mainDio;
   final Dio _refreshDio;
   final VoidCallback _onForceLogout;
+
+  /// Extra key used to mark a request as a post-refresh retry,
+  /// preventing infinite 401→refresh→retry loops.
+  static const _retryFlag = '_authRetry';
 
   /// Mutex to prevent multiple simultaneous refresh attempts.
   Completer<bool>? _refreshCompleter;
@@ -34,12 +44,10 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip auth header for public endpoints.
     if (_isPublicEndpoint(options.path)) {
       return handler.next(options);
     }
 
-    // Proactively refresh if token is about to expire.
     final isExpired = await _storage.isTokenExpired(
       buffer: AppConfig.tokenRefreshBuffer,
     );
@@ -57,25 +65,35 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Only handle 401 for non-auth endpoints.
+    final isRetry = err.requestOptions.extra[_retryFlag] == true;
+
+    // Don't handle non-401, auth endpoints, or already-retried requests.
     if (err.response?.statusCode != 401 ||
-        _isAuthEndpoint(err.requestOptions.path)) {
+        _isAuthEndpoint(err.requestOptions.path) ||
+        isRetry) {
       return handler.next(err);
     }
 
-    // Attempt refresh.
     final refreshed = await _attemptRefresh();
     if (!refreshed) {
       _onForceLogout();
       return handler.next(err);
     }
 
-    // Retry the original request with the new token.
+    // Retry through the MAIN Dio so the full interceptor chain
+    // (including this onRequest) attaches the fresh token.
     try {
-      final token = await _storage.getAccessToken();
-      final options = err.requestOptions;
-      options.headers['Authorization'] = 'Bearer $token';
-      final response = await _refreshDio.fetch(options);
+      final original = err.requestOptions;
+      final response = await _mainDio.request(
+        original.path,
+        data: original.data,
+        queryParameters: original.queryParameters,
+        options: Options(
+          method: original.method,
+          responseType: original.responseType,
+          extra: {_retryFlag: true},
+        ),
+      );
       return handler.resolve(response);
     } on DioException catch (retryError) {
       return handler.next(retryError);
@@ -87,7 +105,6 @@ class AuthInterceptor extends Interceptor {
   /// Uses a [Completer] as mutex so concurrent 401s only
   /// trigger one refresh call.
   Future<bool> _attemptRefresh() async {
-    // If a refresh is already in progress, wait for it.
     if (_refreshCompleter != null) {
       return _refreshCompleter!.future;
     }

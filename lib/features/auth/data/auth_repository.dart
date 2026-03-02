@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:latinterritory/core/constants/api_endpoints.dart';
+import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/storage/secure_storage.dart';
 import 'package:latinterritory/features/auth/data/models/auth_models.dart';
+import 'package:latinterritory/shared/utils/logger.dart';
 
 /// Repository for all authentication operations.
 ///
@@ -25,7 +27,7 @@ class AuthRepository {
       data: request.toJson(),
     );
     final authResponse = AuthResponse.fromJson(response.data);
-    await _persistTokens(authResponse);
+    await _persistSession(authResponse);
     return authResponse;
   }
 
@@ -36,8 +38,6 @@ class AuthRepository {
       ApiEndpoints.register,
       data: request.toJson(),
     );
-    // Backend sends verification email.
-    // User must login after verifying.
   }
 
   // ── Google Sign-In ──────────────────────────────────────
@@ -48,7 +48,7 @@ class AuthRepository {
       data: {'idToken': idToken},
     );
     final authResponse = AuthResponse.fromJson(response.data);
-    await _persistTokens(authResponse);
+    await _persistSession(authResponse);
     return authResponse;
   }
 
@@ -70,17 +70,33 @@ class AuthRepository {
 
   // ── Check Existing Session ─────────────────────────────
 
-  /// Returns the current user if a valid token exists in storage.
-  /// Returns null if no token or token is invalid.
+  /// Restores the session from cached user + stored tokens.
+  ///
+  /// The backend's `/api/users/me` endpoint currently does not
+  /// accept mobile Bearer tokens, so we rely on the user data
+  /// cached at login time. The tokens are still valid for all
+  /// other API calls (the interceptor handles refresh).
   Future<User?> restoreSession() async {
     final token = await _storage.getAccessToken();
     if (token == null) return null;
 
+    final cachedJson = await _storage.getCachedUser();
+    if (cachedJson != null) {
+      return User.fromJson(cachedJson);
+    }
+
+    // Fallback: try the API (in case cache was lost but tokens are valid).
     try {
-      return await getCurrentUser();
+      final user = await getCurrentUser();
+      await _storage.saveUser(user.toJson());
+      return user;
+    } on DioException catch (e) {
+      final error = e.error;
+      if (error is UnauthorizedException || error is ForbiddenException) {
+        await _storage.clearAll();
+      }
+      return null;
     } catch (_) {
-      // Token expired or invalid — clear and return null.
-      await _storage.clearAll();
       return null;
     }
   }
@@ -88,16 +104,20 @@ class AuthRepository {
   // ── Logout ──────────────────────────────────────────────
 
   Future<void> logout() async {
-    // TODO: Optionally notify backend to invalidate refresh token.
     await _storage.clearAll();
   }
 
   // ── Helpers ─────────────────────────────────────────────
 
-  Future<void> _persistTokens(AuthResponse response) async {
-    await _storage.saveTokens(
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-    );
+  /// Persists tokens AND user data so the session can be
+  /// restored without an API call on next app start.
+  Future<void> _persistSession(AuthResponse response) async {
+    await Future.wait([
+      _storage.saveTokens(
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      ),
+      _storage.saveUser(response.user.toJson()),
+    ]);
   }
 }
