@@ -101,6 +101,26 @@ class AuthRepository {
     }
   }
 
+  // ── Update Nickname ────────────────────────────────────
+
+  Future<User> updateNickname(String nickname) async {
+    // Send to backend via PATCH /api/users/me
+    await _dio.patch(
+      ApiEndpoints.usersMe,
+      data: {'nickname': nickname},
+    );
+
+    // Update local cache
+    final cachedJson = await _storage.getCachedUser();
+    if (cachedJson == null) {
+      throw StateError('No cached user found.');
+    }
+    final user = User.fromJson(cachedJson);
+    final updated = user.copyWith(nickname: nickname);
+    await _storage.saveUser(updated.toJson());
+    return updated;
+  }
+
   // ── Logout ──────────────────────────────────────────────
 
   Future<void> logout() async {

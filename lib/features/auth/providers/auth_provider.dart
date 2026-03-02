@@ -124,6 +124,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncData(AuthState());
   }
 
+  /// Update nickname locally (and eventually via API).
+  Future<void> setNickname(String nickname) async {
+    final repo = ref.read(authRepositoryProvider);
+    final updated = await repo.updateNickname(nickname);
+    state = AsyncData(AuthState(user: updated));
+  }
+
   /// Refresh user data (after profile edit, etc.).
   Future<void> refreshUser() async {
     final repo = ref.read(authRepositoryProvider);

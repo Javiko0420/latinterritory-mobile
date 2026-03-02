@@ -4,6 +4,7 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
+import 'package:latinterritory/shared/widgets/nickname_dialog.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -55,6 +56,15 @@ class ProfileScreen extends ConsumerWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
+            if (user.nickname != null) ...[
+              const SizedBox(height: AppDimensions.xs),
+              Text(
+                '@${user.nickname}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ],
             const SizedBox(height: AppDimensions.xs),
             Text(
               user.email,
@@ -67,10 +77,18 @@ class ProfileScreen extends ConsumerWidget {
 
             // ── Menu Items ──────────────────────────────
             _ProfileMenuItem(
-              icon: Icons.edit_outlined,
-              label: 'Edit Profile',
-              onTap: () {
-                // TODO: Navigate to edit profile.
+              icon: Icons.alternate_email,
+              label: 'Edit Nickname',
+              onTap: () async {
+                final nickname = await NicknameDialog.show(
+                  context,
+                  currentNickname: user.nickname,
+                );
+                if (nickname != null) {
+                  await ref
+                      .read(authStateProvider.notifier)
+                      .setNickname(nickname);
+                }
               },
             ),
             _ProfileMenuItem(

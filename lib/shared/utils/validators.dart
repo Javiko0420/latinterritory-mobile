@@ -95,4 +95,23 @@ class Validators {
     }
     return null;
   }
+
+  static final _nicknameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+
+  static String? nickname(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Nickname is required.';
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 3) {
+      return 'Nickname must be at least 3 characters.';
+    }
+    if (trimmed.length > 20) {
+      return 'Nickname must be at most 20 characters.';
+    }
+    if (!_nicknameRegex.hasMatch(trimmed)) {
+      return 'Only letters, numbers, and underscores allowed.';
+    }
+    return null;
+  }
 }

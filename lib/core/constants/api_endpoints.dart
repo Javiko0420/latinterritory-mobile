@@ -19,6 +19,7 @@ class ApiEndpoints {
   static const String usersMe = '/api/users/me';
   static const String completeProfile = '/api/users/me/complete-profile';
   static const String changePassword = '/api/users/me/change-password';
+  // Nickname update uses PATCH /api/users/me with { "nickname": "..." }
 
   // ── Businesses ──────────────────────────────────────────
   static const String businesses = '/api/businesses';
