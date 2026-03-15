@@ -11,23 +11,24 @@ final forumRepositoryProvider = Provider<ForumRepository>((ref) {
 
 // ── Forums List ───────────────────────────────────────────
 
-final forumsProvider = FutureProvider<List<Forum>>((ref) async {
+final forumsProvider =
+    FutureProvider.autoDispose<List<Forum>>((ref) async {
   final repo = ref.watch(forumRepositoryProvider);
   return repo.getForums();
 });
 
 // ── Posts for a Forum ─────────────────────────────────────
 
-final forumPostsProvider =
-    FutureProvider.family<PaginatedPosts, String>((ref, forumId) async {
+final forumPostsProvider = FutureProvider.autoDispose
+    .family<PaginatedPosts, String>((ref, forumId) async {
   final repo = ref.watch(forumRepositoryProvider);
   return repo.getForumPosts(forumId);
 });
 
 // ── Comments for a Post ───────────────────────────────────
 
-final postCommentsProvider =
-    FutureProvider.family<List<ForumComment>, String>((ref, postId) async {
+final postCommentsProvider = FutureProvider.autoDispose
+    .family<List<ForumComment>, String>((ref, postId) async {
   final repo = ref.watch(forumRepositoryProvider);
   return repo.getPostComments(postId);
 });
@@ -67,11 +68,16 @@ class TogglePostLike {
   TogglePostLike(this._ref);
   final Ref _ref;
 
-  Future<void> call(String postId, String forumId) async {
-    final repo = _ref.read(forumRepositoryProvider);
-    await repo.togglePostLike(postId);
-    // Refresh posts to reflect updated like count.
-    _ref.invalidate(forumPostsProvider(forumId));
+  Future<bool> call(String postId, String forumId) async {
+    try {
+      final repo = _ref.read(forumRepositoryProvider);
+      await repo.togglePostLike(postId);
+      // Refresh posts to reflect updated like count.
+      _ref.invalidate(forumPostsProvider(forumId));
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
@@ -83,10 +89,15 @@ class ToggleCommentLike {
   ToggleCommentLike(this._ref);
   final Ref _ref;
 
-  Future<void> call(String commentId, String postId) async {
-    final repo = _ref.read(forumRepositoryProvider);
-    await repo.toggleCommentLike(commentId);
-    // Refresh comments to reflect updated like count.
-    _ref.invalidate(postCommentsProvider(postId));
+  Future<bool> call(String commentId, String postId) async {
+    try {
+      final repo = _ref.read(forumRepositoryProvider);
+      await repo.toggleCommentLike(commentId);
+      // Refresh comments to reflect updated like count.
+      _ref.invalidate(postCommentsProvider(postId));
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

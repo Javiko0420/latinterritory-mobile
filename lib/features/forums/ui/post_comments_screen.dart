@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
@@ -56,9 +57,12 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
         ref.invalidate(forumPostsProvider(widget.forumId));
         context.showSnackBar('Comment added!');
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar('Failed to post comment.');
+        final message = e is DioException
+            ? (e.error?.toString() ?? 'Failed to post comment.')
+            : 'Failed to post comment.';
+        context.showErrorSnackBar(message);
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

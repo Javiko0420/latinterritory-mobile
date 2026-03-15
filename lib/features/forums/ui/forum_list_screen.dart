@@ -27,7 +27,10 @@ class ForumListScreen extends ConsumerWidget {
             return const _EmptyView();
           }
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(forumsProvider),
+            onRefresh: () async {
+              ref.invalidate(forumsProvider);
+              await ref.read(forumsProvider.future);
+            },
             child: ListView.separated(
               padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
               itemCount: forums.length,

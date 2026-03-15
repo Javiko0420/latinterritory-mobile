@@ -109,8 +109,11 @@ class _ForumPostsScreenState extends ConsumerState<ForumPostsScreen> {
                   );
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(
-                      forumPostsProvider(widget.forum.id)),
+                  onRefresh: () async {
+                    ref.invalidate(forumPostsProvider(widget.forum.id));
+                    // Wait for the new data to arrive before hiding the spinner.
+                    await ref.read(forumPostsProvider(widget.forum.id).future);
+                  },
                   child: ListView.separated(
                     padding: const EdgeInsets.all(
                         AppDimensions.screenPaddingH),

@@ -30,8 +30,9 @@ class PostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoggedIn =
-        ref.watch(authStateProvider).value?.isAuthenticated ?? false;
+    final authState = ref.watch(authStateProvider).value;
+    final isLoggedIn = authState?.isAuthenticated ?? false;
+    final currentUserId = authState?.user?.id;
 
     return Card(
       child: InkWell(
@@ -104,9 +105,14 @@ class PostCard extends ConsumerWidget {
                     icon: Icons.favorite_border,
                     label: '${post.likesCount}',
                     onPressed: isLoggedIn
-                        ? () => ref
-                            .read(togglePostLikeProvider)
-                            .call(post.id, forumId)
+                        ? () async {
+                            final ok = await ref
+                                .read(togglePostLikeProvider)
+                                .call(post.id, forumId);
+                            if (!ok && context.mounted) {
+                              context.showErrorSnackBar('Could not like post.');
+                            }
+                          }
                         : null,
                   ),
                   const SizedBox(width: AppDimensions.md),
@@ -119,7 +125,7 @@ class PostCard extends ConsumerWidget {
 
                   const Spacer(),
 
-                  if (isLoggedIn)
+                  if (isLoggedIn && currentUserId != post.author.id)
                     IconButton(
                       icon: Icon(
                         Icons.flag_outlined,
