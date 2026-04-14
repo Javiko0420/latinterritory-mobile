@@ -23,7 +23,8 @@ class ApiEndpoints {
 
   // ── Businesses ──────────────────────────────────────────
   static const String businesses = '/api/businesses';
-  static String businessDetail(String id) => '/api/businesses/$id';
+  static String businessDetail(String id) => "/api/businesses/$id";
+  static String businessBySlug(String slug) => '/api/businesses/slug/$slug';
 
   // ── Jobs ────────────────────────────────────────────────
   static const String jobs = '/api/jobs';
