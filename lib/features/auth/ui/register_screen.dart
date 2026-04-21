@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/constants/legal_documents.dart';
+import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/features/auth/data/models/auth_models.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
@@ -129,7 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar(e.toString());
+        context.showErrorSnackBar(resolveApiErrorMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

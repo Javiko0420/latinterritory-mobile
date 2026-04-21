@@ -7,10 +7,15 @@ import 'package:latinterritory/features/auth/ui/login_screen.dart';
 import 'package:latinterritory/features/auth/ui/register_screen.dart';
 import 'package:latinterritory/features/auth/ui/forgot_password_screen.dart';
 import 'package:latinterritory/features/home/ui/home_screen.dart';
+import 'package:latinterritory/features/businesses/ui/business_detail_screen.dart';
 import 'package:latinterritory/features/businesses/ui/business_list_screen.dart';
 import 'package:latinterritory/features/jobs/ui/job_list_screen.dart';
+import 'package:latinterritory/features/events/ui/event_detail_screen.dart';
 import 'package:latinterritory/features/events/ui/event_list_screen.dart';
+import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/ui/forum_list_screen.dart';
+import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
+import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/profile/ui/profile_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
@@ -32,7 +37,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // ── Auth Redirect Guard ─────────────────────────────
     redirect: (context, state) {
-      final isLoggedIn = authState.value?.isAuthenticated ?? false;
+      // Skip redirect while auth is still resolving (no value yet).
+      // Prevents false logouts from transient AsyncLoading states.
+      if (!authState.hasValue) return null;
+
+      final isLoggedIn = authState.value!.isAuthenticated;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
 
       // Not logged in and trying to access protected route → login.
@@ -71,6 +80,40 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/forgot-password',
         name: RouteNames.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      // ── Detail Routes (full-screen, outside shell) ───
+      GoRoute(
+        path: '/events/:id',
+        name: RouteNames.eventDetail,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => EventDetailScreen(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/businesses/:slug',
+        name: RouteNames.businessDetail,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => BusinessDetailScreen(
+          slug: state.pathParameters['slug']!,
+        ),
+      ),
+      GoRoute(
+        path: '/forums/:id',
+        name: RouteNames.forumDetail,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            ForumPostsScreen(forum: state.extra as Forum),
+      ),
+      GoRoute(
+        path: '/forums/:forumId/posts/:postId',
+        name: RouteNames.forumPost,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => PostCommentsScreen(
+          post: state.extra as ForumPost,
+          forumId: state.pathParameters['forumId']!,
+        ),
       ),
 
       // ── Main App (with bottom nav) ────────────────────

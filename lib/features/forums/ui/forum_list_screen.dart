@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/providers/forum_providers.dart';
-import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
 class ForumListScreen extends ConsumerWidget {
@@ -56,10 +57,10 @@ class _ForumCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ForumPostsScreen(forum: forum),
-            ),
+          context.pushNamed(
+            RouteNames.forumDetail,
+            pathParameters: {'id': forum.id},
+            extra: forum,
           );
         },
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
@@ -42,7 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authState = ref.read(authStateProvider);
       if (authState.hasError) {
         context.showErrorSnackBar(
-          authState.error.toString(),
+          resolveApiErrorMessage(authState.error),
         );
       }
     }
@@ -55,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authState = ref.read(authStateProvider);
       if (authState.hasError) {
         context.showErrorSnackBar(
-          authState.error.toString(),
+          resolveApiErrorMessage(authState.error),
         );
       }
     }

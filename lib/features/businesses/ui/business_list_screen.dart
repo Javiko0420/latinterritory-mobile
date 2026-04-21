@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/businesses/data/models/business_models.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
-import 'package:latinterritory/features/businesses/ui/business_detail_screen.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
 class BusinessListScreen extends ConsumerStatefulWidget {
@@ -242,11 +243,9 @@ class _BusinessCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  BusinessDetailScreen(slug: business.slug),
-            ),
+          context.pushNamed(
+            RouteNames.businessDetail,
+            pathParameters: {'slug': business.slug},
           );
         },
         child: Column(

@@ -1,3 +1,20 @@
+import 'package:dio/dio.dart';
+
+/// Extracts a user-friendly message from an error.
+///
+/// Dio wraps our mapped [ApiException] inside the `error` field of a
+/// [DioException]; its default `toString()` is long and technical, so
+/// callers should never show it directly in UI.
+String resolveApiErrorMessage(Object? error) {
+  if (error is ApiException) return error.message;
+  if (error is DioException) {
+    final inner = error.error;
+    if (inner is ApiException) return inner.message;
+    return 'Network error. Please try again.';
+  }
+  return 'An unexpected error occurred.';
+}
+
 /// Base exception for all API-related errors.
 sealed class ApiException implements Exception {
   const ApiException({required this.message, this.statusCode});

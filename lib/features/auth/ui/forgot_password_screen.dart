@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
@@ -44,7 +45,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar(e.toString());
+        context.showErrorSnackBar(resolveApiErrorMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

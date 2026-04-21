@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/providers/forum_providers.dart';
-import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/forums/ui/widgets/post_card.dart';
 import 'package:latinterritory/features/forums/utils/nickname_guard.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
@@ -126,13 +127,13 @@ class _ForumPostsScreenState extends ConsumerState<ForumPostsScreen> {
                         post: post,
                         forumId: widget.forum.id,
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => PostCommentsScreen(
-                                post: post,
-                                forumId: widget.forum.id,
-                              ),
-                            ),
+                          context.pushNamed(
+                            RouteNames.forumPost,
+                            pathParameters: {
+                              'forumId': widget.forum.id,
+                              'postId': post.id,
+                            },
+                            extra: post,
                           );
                         },
                       );
