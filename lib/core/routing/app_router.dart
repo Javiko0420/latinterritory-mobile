@@ -9,6 +9,7 @@ import 'package:latinterritory/features/auth/ui/forgot_password_screen.dart';
 import 'package:latinterritory/features/home/ui/home_screen.dart';
 import 'package:latinterritory/features/businesses/ui/business_detail_screen.dart';
 import 'package:latinterritory/features/businesses/ui/business_list_screen.dart';
+import 'package:latinterritory/features/jobs/ui/job_detail_screen.dart';
 import 'package:latinterritory/features/jobs/ui/job_list_screen.dart';
 import 'package:latinterritory/features/events/ui/event_detail_screen.dart';
 import 'package:latinterritory/features/events/ui/event_list_screen.dart';
@@ -89,6 +90,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => EventDetailScreen(
           eventId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/jobs/:id',
+        name: RouteNames.jobDetail,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => JobDetailScreen(
+          jobId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(
