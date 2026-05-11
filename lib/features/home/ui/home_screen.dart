@@ -62,6 +62,8 @@ class HomeScreen extends ConsumerWidget {
             // ── Weather ─────────────────────────────────
             _WeatherCard(),
             const SizedBox(height: AppDimensions.md),
+            _ExchangeRatesCard(),
+            const SizedBox(height: AppDimensions.md),
             const _SectionPlaceholder(
               title: 'Latest from Forums',
               icon: Icons.forum_outlined,
@@ -170,6 +172,44 @@ class _WeatherCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Weather',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExchangeRatesCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => context.go('/exchange'),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.md),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                child: const Icon(Icons.currency_exchange,
+                    color: AppColors.secondary),
+              ),
+              const SizedBox(width: AppDimensions.sm),
+              Expanded(
+                child: Text(
+                  'Tasas de Cambio',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
