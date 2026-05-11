@@ -18,6 +18,7 @@ import 'package:latinterritory/features/forums/ui/forum_list_screen.dart';
 import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
 import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/profile/ui/profile_screen.dart';
+import 'package:latinterritory/features/weather/ui/weather_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
 /// Global navigator key for accessing navigation outside widget tree.
@@ -48,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Not logged in and trying to access protected route → login.
       if (!isLoggedIn && !isAuthRoute) {
         // Allow public routes (home, businesses, jobs, events) without auth.
-        final publicPaths = ['/home', '/businesses', '/jobs', '/events'];
+        final publicPaths = ['/home', '/businesses', '/jobs', '/events', '/weather'];
         final isPublic = publicPaths.any(
           (p) => state.matchedLocation.startsWith(p),
         );
@@ -172,6 +173,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: RouteNames.profile,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ProfileScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/weather',
+            name: RouteNames.weather,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: WeatherScreen(),
             ),
           ),
         ],

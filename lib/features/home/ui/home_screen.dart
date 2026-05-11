@@ -59,11 +59,8 @@ class HomeScreen extends ConsumerWidget {
 
             const SizedBox(height: AppDimensions.lg),
 
-            // ── Placeholder sections ────────────────────
-            const _SectionPlaceholder(
-              title: 'Weather & Exchange Rates',
-              icon: Icons.wb_sunny_outlined,
-            ),
+            // ── Weather ─────────────────────────────────
+            _WeatherCard(),
             const SizedBox(height: AppDimensions.md),
             const _SectionPlaceholder(
               title: 'Latest from Forums',
@@ -148,6 +145,43 @@ class _QuickItem {
   final String label;
   final String path;
   final Color color;
+}
+
+class _WeatherCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => context.go('/weather'),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.md),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.sm),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                child: const Icon(Icons.wb_sunny_outlined, color: Colors.blue),
+              ),
+              const SizedBox(width: AppDimensions.sm),
+              Expanded(
+                child: Text(
+                  'Weather',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SectionPlaceholder extends StatelessWidget {
