@@ -19,6 +19,7 @@ import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
 import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/profile/ui/profile_screen.dart';
 import 'package:latinterritory/features/exchange/ui/exchange_screen.dart';
+import 'package:latinterritory/features/sports/ui/sports_screen.dart';
 import 'package:latinterritory/features/weather/ui/weather_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
@@ -50,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Not logged in and trying to access protected route → login.
       if (!isLoggedIn && !isAuthRoute) {
         // Allow public routes (home, businesses, jobs, events) without auth.
-        final publicPaths = ['/home', '/businesses', '/jobs', '/events', '/weather', '/exchange'];
+        final publicPaths = ['/home', '/businesses', '/jobs', '/events', '/weather', '/exchange', '/sports'];
         final isPublic = publicPaths.any(
           (p) => state.matchedLocation.startsWith(p),
         );
@@ -188,6 +189,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: RouteNames.exchange,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ExchangeScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/sports',
+            name: RouteNames.sports,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SportsScreen(),
             ),
           ),
         ],

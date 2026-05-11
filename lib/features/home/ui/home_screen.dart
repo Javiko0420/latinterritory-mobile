@@ -64,6 +64,8 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: AppDimensions.md),
             _ExchangeRatesCard(),
             const SizedBox(height: AppDimensions.md),
+            _SportsCard(),
+            const SizedBox(height: AppDimensions.md),
             const _SectionPlaceholder(
               title: 'Latest from Forums',
               icon: Icons.forum_outlined,
@@ -210,6 +212,44 @@ class _ExchangeRatesCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Tasas de Cambio',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SportsCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => context.go('/sports'),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.md),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                child: const Icon(Icons.sports_soccer,
+                    color: AppColors.success),
+              ),
+              const SizedBox(width: AppDimensions.sm),
+              Expanded(
+                child: Text(
+                  'Deportes',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
