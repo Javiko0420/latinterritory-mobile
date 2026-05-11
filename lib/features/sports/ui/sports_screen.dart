@@ -13,7 +13,9 @@ class SportsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(selectedLeagueIndexProvider);
-    final summaryAsync = ref.watch(sportsSummaryProvider);
+    // leagueDetailProvider fetches by slug (colombia, england…) so the data
+    // is always aligned with the selected chip, regardless of API order.
+    final detailAsync = ref.watch(leagueDetailProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Deportes')),
@@ -24,23 +26,20 @@ class SportsScreen extends ConsumerWidget {
 
           // ── Content ───────────────────────────────────
           Expanded(
-            child: summaryAsync.when(
+            child: detailAsync.when(
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
               error: (e, _) => _ErrorView(
-                onRetry: () => ref.invalidate(sportsSummaryProvider),
+                onRetry: () => ref.invalidate(leagueDetailProvider),
               ),
-              data: (summary) => RefreshIndicator(
+              data: (detail) => RefreshIndicator(
                 onRefresh: () async {
-                  ref.invalidate(sportsSummaryProvider);
+                  ref.invalidate(leagueDetailProvider);
                   try {
-                    await ref.read(sportsSummaryProvider.future);
+                    await ref.read(leagueDetailProvider.future);
                   } catch (_) {}
                 },
-                child: _SportsContent(
-                  summary: summary,
-                  selectedIndex: selectedIndex,
-                ),
+                child: _SportsContent(detail: detail),
               ),
             ),
           ),
@@ -98,22 +97,27 @@ class _LeagueSelector extends ConsumerWidget {
 // ── Main scrollable content ───────────────────────────────
 
 class _SportsContent extends StatelessWidget {
-  const _SportsContent({
-    required this.summary,
-    required this.selectedIndex,
-  });
-
-  final SportsSummary summary;
-  final int selectedIndex;
+  const _SportsContent({required this.detail});
+  final LeagueDetail detail;
 
   @override
   Widget build(BuildContext context) {
-    final league = selectedIndex < summary.leagues.length
-        ? summary.leagues[selectedIndex]
-        : null;
+    // Filter results to today's date for "Partidos de Hoy".
+    // Falls back to showing recent results when there are none today.
+    final today = DateTime.now();
+    final todayFixtures = detail.results.where((f) {
+      final date = DateTime.tryParse(f.dateIso)?.toLocal();
+      return date != null &&
+          date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+    }).toList();
 
-    final fixtures = league?.todayFixtures ?? [];
-    final standings = league?.standings ?? [];
+    final hasToday = todayFixtures.isNotEmpty;
+    final displayFixtures =
+        hasToday ? todayFixtures : detail.results.take(5).toList();
+    final fixturesTitle =
+        hasToday ? 'Partidos de Hoy' : 'Últimos Resultados';
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -121,14 +125,14 @@ class _SportsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Today's Fixtures ──────────────────────────
+          // ── Fixtures ──────────────────────────────────
           Row(
             children: [
               const Icon(Icons.sports_soccer,
                   size: AppDimensions.iconMd, color: AppColors.primary),
               const SizedBox(width: AppDimensions.xs),
               Text(
-                'Partidos de Hoy',
+                fixturesTitle,
                 style: context.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -136,13 +140,13 @@ class _SportsContent extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.sm),
 
-          if (fixtures.isEmpty)
+          if (displayFixtures.isEmpty)
             const _EmptyState(
               icon: Icons.sports_soccer_outlined,
-              message: 'Sin partidos hoy',
+              message: 'Sin partidos disponibles',
             )
           else
-            ...fixtures.map((f) => _FixtureCard(fixture: f)),
+            ...displayFixtures.map((f) => _FixtureCard(fixture: f)),
 
           const SizedBox(height: AppDimensions.lg),
 
@@ -161,24 +165,25 @@ class _SportsContent extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.sm),
 
-          if (standings.isEmpty)
+          if (detail.standings.isEmpty)
             const _EmptyState(
               icon: Icons.table_chart_outlined,
               message: 'Sin tabla disponible',
             )
           else
-            _StandingsTable(standings: standings),
+            _StandingsTable(standings: detail.standings),
 
           const SizedBox(height: AppDimensions.lg),
 
-          if (league != null)
-            Center(
-              child: Text(
-                league.name,
-                style: context.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textTertiary),
-              ),
+          Center(
+            child: Text(
+              detail.season != null
+                  ? '${detail.league.name} · ${detail.season}'
+                  : detail.league.name,
+              style: context.textTheme.bodySmall
+                  ?.copyWith(color: AppColors.textTertiary),
             ),
+          ),
         ],
       ),
     );
