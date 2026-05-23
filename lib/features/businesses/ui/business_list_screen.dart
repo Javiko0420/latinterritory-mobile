@@ -95,7 +95,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
       appBar: AppBar(title: const Text('Directorio')),
       body: Column(
         children: [
-          // ── Buscador ────────────────────────────────
+          // ── Buscador (pill) ─────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppDimensions.screenPaddingH,
@@ -108,7 +108,8 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
               onChanged: _onSearch,
               decoration: InputDecoration(
                 hintText: 'Buscar negocios...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search,
+                    color: AppColors.textTertiary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -123,12 +124,23 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                     Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusMd),
+                      BorderRadius.circular(AppDimensions.radiusFull),
                   borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusFull),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusFull),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.md,
-                  vertical: AppDimensions.sm,
+                  vertical: 12,
                 ),
               ),
             ),
@@ -153,14 +165,22 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                   label: Text(
                     _categoryLabels[cat] ?? cat,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : null,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                   selected: isSelected,
                   onSelected: (_) => _onCategoryTap(cat),
                   selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
+                  showCheckmark: false,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusFull),
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               },

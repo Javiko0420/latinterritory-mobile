@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/providers/forum_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
 class ForumListScreen extends ConsumerWidget {
   const ForumListScreen({super.key});
@@ -34,15 +36,90 @@ class ForumListScreen extends ConsumerWidget {
             },
             child: ListView.separated(
               padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-              itemCount: forums.length,
-              separatorBuilder: (_, __) =>
+              itemCount: forums.length + 1,
+              separatorBuilder: (_, _) =>
                   const SizedBox(height: AppDimensions.sm),
               itemBuilder: (context, index) {
-                return _ForumCard(forum: forums[index]);
+                if (index == 0) return const _CommunityBanner();
+                return _ForumCard(forum: forums[index - 1]);
               },
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Gradient gold+primary banner shown on top of the forum list.
+class _CommunityBanner extends StatelessWidget {
+  const _CommunityBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.latinGold, AppColors.primary],
+          ),
+        ),
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AndeanPatternPainter(
+                    color: Colors.white,
+                    opacity: 0.10,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(right: 8, top: 4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '142 latinos activos hoy',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Únete a la conversación con tu comunidad',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -69,32 +146,54 @@ class _ForumCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Topic Badge ──────────────────────────
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.sm,
-                  vertical: AppDimensions.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Text(
-                  forum.topic.replaceAll('_', ' '),
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.forum_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: AppDimensions.sm),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.sm,
+                        vertical: AppDimensions.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusFull),
+                      ),
+                      child: Text(
+                        forum.topic.replaceAll('_', ' '),
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppDimensions.sm),
 
               // ── Name ─────────────────────────────────
               Text(
                 forum.name,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppDimensions.xs),

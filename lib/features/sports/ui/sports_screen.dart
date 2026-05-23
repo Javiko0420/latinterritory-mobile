@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/sports/data/models/sports_models.dart';
 import 'package:latinterritory/features/sports/providers/sports_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
 class SportsScreen extends ConsumerWidget {
   const SportsScreen({super.key});
@@ -76,15 +78,23 @@ class _LeagueSelector extends ConsumerWidget {
               label: Text(
                 '${opt.flag} ${opt.label}',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? Colors.white : null,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : AppColors.textSecondary,
                 ),
               ),
               selected: isSelected,
               onSelected: (_) =>
                   ref.read(selectedLeagueIndexProvider.notifier).select(i),
               selectedColor: AppColors.primary,
-              checkmarkColor: Colors.white,
+              showCheckmark: false,
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(AppDimensions.radiusFull),
+              ),
               visualDensity: VisualDensity.compact,
             );
           },
@@ -119,12 +129,26 @@ class _SportsContent extends StatelessWidget {
     final fixturesTitle =
         hasToday ? 'Partidos de Hoy' : 'Últimos Resultados';
 
+    SimpleFixture? liveFixture;
+    for (final f in detail.results) {
+      const liveStatuses = {'1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'};
+      if (liveStatuses.contains(f.status)) {
+        liveFixture = f;
+        break;
+      }
+    }
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (liveFixture != null) ...[
+            _LiveMatchHero(fixture: liveFixture),
+            const SizedBox(height: AppDimensions.lg),
+          ],
+
           // ── Fixtures ──────────────────────────────────
           Row(
             children: [
@@ -186,6 +210,139 @@ class _SportsContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Live match hero (gradient + Andean pattern) ───────────
+
+class _LiveMatchHero extends StatelessWidget {
+  const _LiveMatchHero({required this.fixture});
+
+  final SimpleFixture fixture;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.latinRed, AppColors.primaryDark],
+          ),
+        ),
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AndeanPatternPainter(
+                    color: Colors.white,
+                    opacity: 0.12,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusFull),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.latinRed,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'EN VIVO',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.latinRed,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          fixture.home.name,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.sm),
+                        child: Text(
+                          '${fixture.goals.home ?? 0} – ${fixture.goals.away ?? 0}',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          fixture.away.name,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (fixture.elapsed != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      "${fixture.elapsed}'",
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

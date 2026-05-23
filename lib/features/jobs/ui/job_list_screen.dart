@@ -58,7 +58,7 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
       appBar: AppBar(title: const Text('Empleos')),
       body: Column(
         children: [
-          // ── Search Bar ──────────────────────────────
+          // ── Search Bar (pill) ───────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppDimensions.screenPaddingH,
@@ -71,7 +71,8 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
               onChanged: _onSearch,
               decoration: InputDecoration(
                 hintText: 'Buscar empleos...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search,
+                    color: AppColors.textTertiary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -86,12 +87,23 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
                     Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusMd),
+                      BorderRadius.circular(AppDimensions.radiusFull),
                   borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusFull),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusFull),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.md,
-                  vertical: AppDimensions.sm,
+                  vertical: 12,
                 ),
               ),
             ),
@@ -116,14 +128,22 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
                   label: Text(
                     cat,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : null,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                   selected: isSelected,
                   onSelected: (_) => _onCategoryTap(cat),
                   selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
+                  showCheckmark: false,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusFull),
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               },
@@ -240,10 +260,12 @@ class _JobCard extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
-                          Colors.blue.shade500,
-                          Colors.red.shade400,
+                          AppColors.latinSkyBlue,
+                          AppColors.secondary,
                         ],
                       ),
                       borderRadius:

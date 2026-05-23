@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
@@ -8,9 +9,13 @@ import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
 import 'package:latinterritory/shared/widgets/lt_text_field.dart';
 
+/// "Crema Latina" login screen — V2 design.
+///
+/// Cream paper background + Andean pattern + brand orange compass logo.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -66,157 +71,230 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final isLoading = authState.isLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.background;
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppDimensions.xxl),
+      backgroundColor: bg,
+      body: AndeanPatternBackground(
+        backgroundColor: bg,
+        patternColor: AppColors.primary,
+        opacity: 0.05,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 24),
 
-                // ── Logo / Brand ──────────────────────────
-                // TODO: Replace with actual logo asset.
-                const Icon(
-                  Icons.public,
-                  size: 72,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: AppDimensions.md),
-                Text(
-                  'LatinTerritory',
-                  style: context.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppDimensions.xs),
-                Text(
-                  'Tu comunidad latina',
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: AppDimensions.xxl),
-
-                // ── Email Field ───────────────────────────
-                LtTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  hint: 'tu@email.com',
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  validator: Validators.email,
-                  enabled: !isLoading,
-                ),
-                const SizedBox(height: AppDimensions.md),
-
-                // ── Password Field ────────────────────────
-                LtTextField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  hint: '••••••••',
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.done,
-                  validator: Validators.password,
-                  enabled: !isLoading,
-                  onFieldSubmitted: (_) => _handleLogin(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textTertiary,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
-                  ),
-                ),
-
-                // ── Forgot Password ──────────────────────
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => context.pushNamed(RouteNames.forgotPassword),
-                    child: const Text('Forgot password?'),
-                  ),
-                ),
-
-                const SizedBox(height: AppDimensions.sm),
-
-                // ── Login Button ──────────────────────────
-                LtButton(
-                  label: 'Log In',
-                  onPressed: _handleLogin,
-                  isLoading: isLoading,
-                ),
-
-                const SizedBox(height: AppDimensions.md),
-
-                // ── Divider ───────────────────────────────
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.md,
+                  // ── Logo ─────────────────────────────────
+                  Center(
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.18),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        'or',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textTertiary,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/images/lt_logo.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
+                  ),
 
-                const SizedBox(height: AppDimensions.md),
+                  const SizedBox(height: 24),
 
-                // ── Google Sign-In ────────────────────────
-                LtButton(
-                  label: 'Continue with Google',
-                  onPressed: _handleGoogleSignIn,
-                  isLoading: isLoading,
-                  variant: LtButtonVariant.outlined,
-                  icon: Icons.g_mobiledata,
-                ),
-
-                const SizedBox(height: AppDimensions.xl),
-
-                // ── Register Link ─────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  // ── Title ────────────────────────────────
+                  Text(
+                    'Latin Territory',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
                     ),
-                    TextButton(
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Latinos conectados en el mundo',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  // ── Email ────────────────────────────────
+                  LtTextField(
+                    controller: _emailController,
+                    label: 'Correo electrónico',
+                    uppercaseLabel: true,
+                    hint: 'tu@email.com',
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: Validators.email,
+                    enabled: !isLoading,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Password ────────────────────────────
+                  LtTextField(
+                    controller: _passwordController,
+                    label: 'Contraseña',
+                    uppercaseLabel: true,
+                    hint: '••••••••',
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    validator: Validators.password,
+                    enabled: !isLoading,
+                    onFieldSubmitted: (_) => _handleLogin(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.textTertiary,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
                       onPressed: isLoading
                           ? null
-                          : () => context.pushNamed(RouteNames.register),
-                      child: const Text('Sign Up'),
+                          : () =>
+                              context.pushNamed(RouteNames.forgotPassword),
+                      child: const Text('¿Olvidaste tu contraseña?'),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // ── Login button ────────────────────────
+                  LtButton(
+                    label: 'ENTRAR',
+                    onPressed: _handleLogin,
+                    isLoading: isLoading,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Divider ─────────────────────────────
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'o continúa con',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.darkTextTertiary
+                                : AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Google ─────────────────────────────
+                  LtButton(
+                    label: 'Continuar con Google',
+                    onPressed: _handleGoogleSignIn,
+                    isLoading: isLoading,
+                    variant: LtButtonVariant.outlined,
+                    icon: Icons.public,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Register link ──────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '¿No tienes cuenta? ',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: isLoading
+                            ? null
+                            : () => context.pushNamed(RouteNames.register),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Regístrate'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AppDimensions.lg),
+
+                  // ── Flags row ──────────────────────────
+                  const _LatinFlagsRow(),
+
+                  const SizedBox(height: AppDimensions.md),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LatinFlagsRow extends StatelessWidget {
+  const _LatinFlagsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Text('🇨🇴', style: TextStyle(fontSize: 20)),
+        Text('🇲🇽', style: TextStyle(fontSize: 20)),
+        Text('🇧🇷', style: TextStyle(fontSize: 20)),
+        Text('🇦🇷', style: TextStyle(fontSize: 20)),
+        Text('🇵🇪', style: TextStyle(fontSize: 20)),
+        Text('🇨🇱', style: TextStyle(fontSize: 20)),
+      ],
     );
   }
 }

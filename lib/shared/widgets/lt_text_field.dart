@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 
-/// Branded text field with label, hint, and validation support.
+/// Branded text field with optional uppercase label, hint, and validation.
 ///
-/// Wraps [TextFormField] with consistent styling.
+/// Uses surfaceVariant fill in light mode and darkSurfaceVariant in dark.
 class LtTextField extends StatelessWidget {
   const LtTextField({
     super.key,
@@ -20,6 +22,7 @@ class LtTextField extends StatelessWidget {
     this.maxLines = 1,
     this.onFieldSubmitted,
     this.autofillHints,
+    this.uppercaseLabel = false,
   });
 
   final TextEditingController controller;
@@ -35,21 +38,36 @@ class LtTextField extends StatelessWidget {
   final int maxLines;
   final ValueChanged<String>? onFieldSubmitted;
   final Iterable<String>? autofillHints;
+  final bool uppercaseLabel;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final fillColor =
+        isDark ? AppColors.darkSurfaceVariant : AppColors.surfaceVariant;
+
+    final labelStyle = uppercaseLabel
+        ? GoogleFonts.spaceGrotesk(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+            color: labelColor,
+          )
+        : GoogleFonts.spaceGrotesk(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: labelColor,
+          );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(
-            label!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: AppDimensions.xs),
+          Text(uppercaseLabel ? label!.toUpperCase() : label!, style: labelStyle),
+          const SizedBox(height: AppDimensions.sm),
         ],
         TextFormField(
           controller: controller,
@@ -61,10 +79,35 @@ class LtTextField extends StatelessWidget {
           maxLines: maxLines,
           onFieldSubmitted: onFieldSubmitted,
           autofillHints: autofillHints,
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.textPrimary,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             suffixIcon: suffixIcon,
             prefixIcon: prefixIcon,
+            filled: true,
+            fillColor: fillColor,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 13,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2),
+            ),
           ),
         ),
       ],

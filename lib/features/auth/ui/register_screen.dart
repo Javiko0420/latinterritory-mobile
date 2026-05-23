@@ -140,7 +140,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(
+        title: const Text('Crear cuenta'),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(5),
+          child: _LatinFlagBar(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
@@ -337,7 +343,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 // ── Register Button ─────────────────────
                 LtButton(
-                  label: 'Create Account',
+                  label: 'CREAR CUENTA',
                   onPressed: _handleRegister,
                   isLoading: _isLoading,
                 ),
@@ -345,6 +351,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 8-stripe flag bar (height 5px) shown above the register form.
+class _LatinFlagBar extends StatelessWidget implements PreferredSizeWidget {
+  const _LatinFlagBar();
+
+  static const _stripes = <Color>[
+    AppColors.latinRed,
+    AppColors.latinGold,
+    AppColors.latinGreen,
+    AppColors.primary,
+    AppColors.secondary,
+    AppColors.latinSkyBlue,
+    AppColors.latinPurple,
+    Color(0xFFD4213D),
+  ];
+
+  @override
+  Size get preferredSize => const Size.fromHeight(5);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 5,
+      child: Row(
+        children: [
+          for (final color in _stripes)
+            Expanded(child: ColoredBox(color: color)),
+        ],
       ),
     );
   }

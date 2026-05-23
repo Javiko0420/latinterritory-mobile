@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 
 enum LtButtonVariant { filled, outlined, text }
 
-/// Branded button with loading state and icon support.
-///
-/// Usage:
-/// ```dart
-/// LtButton(
-///   label: 'Log In',
-///   onPressed: _handleLogin,
-///   isLoading: isLoading,
-/// )
-/// ```
+/// Branded button with loading state, icon support, and a soft brand-colored
+/// shadow on the filled variant for a tactile, "stamp-like" feel.
 class LtButton extends StatelessWidget {
   const LtButton({
     super.key,
@@ -33,6 +27,8 @@ class LtButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final child = isLoading
         ? const SizedBox(
             height: 20,
@@ -54,19 +50,63 @@ class LtButton extends StatelessWidget {
 
     final effectiveOnPressed = isLoading ? null : onPressed;
 
-    return switch (variant) {
-      LtButtonVariant.filled => ElevatedButton(
+    final labelStyle = GoogleFonts.spaceGrotesk(
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.2,
+    );
+
+    final filledShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+    );
+
+    switch (variant) {
+      case LtButtonVariant.filled:
+        return DecoratedBox(
+          decoration: isDark
+              ? const BoxDecoration()
+              : BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusMd),
+                  boxShadow: onPressed == null
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                ),
+          child: ElevatedButton(
+            onPressed: effectiveOnPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+              shape: filledShape,
+              textStyle: labelStyle,
+              elevation: 0,
+            ),
+            child: child,
+          ),
+        );
+      case LtButtonVariant.outlined:
+        return OutlinedButton(
           onPressed: effectiveOnPressed,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+            shape: filledShape,
+            textStyle: labelStyle,
+          ),
           child: child,
-        ),
-      LtButtonVariant.outlined => OutlinedButton(
+        );
+      case LtButtonVariant.text:
+        return TextButton(
           onPressed: effectiveOnPressed,
+          style: TextButton.styleFrom(textStyle: labelStyle),
           child: child,
-        ),
-      LtButtonVariant.text => TextButton(
-          onPressed: effectiveOnPressed,
-          child: child,
-        ),
-    };
+        );
+    }
   }
 }

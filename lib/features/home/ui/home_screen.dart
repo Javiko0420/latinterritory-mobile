@@ -1,33 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
-import 'package:latinterritory/features/forums/providers/forum_providers.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
+/// "El Periódico" home — V2 design.
+///
+/// Hero banner with brand gradient + Andean overlay, scrollable category
+/// chips, horizontal businesses carousel and a vertical events list.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  /// Saludo contextual según la hora del día.
-  static String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Buenos días';
-    if (hour < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.value?.user;
-    final forumsAsync = ref.watch(forumsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LatinTerritory'),
+        titleSpacing: 8,
+        leadingWidth: 56,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              'assets/images/lt_logo.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        title: Text(
+          'LatinTerritory',
+          style: GoogleFonts.spaceGrotesk(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           if (user != null)
             IconButton(
@@ -39,66 +55,135 @@ class HomeScreen extends ConsumerWidget {
               onPressed: () => context.pushNamed(RouteNames.login),
               child: const Text('Iniciar Sesión'),
             ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: const [
+          _HeroBanner(),
+          SizedBox(height: 20),
+          _CategoryChips(),
+          SizedBox(height: 24),
+          _SectionHeader(title: 'Negocios destacados'),
+          SizedBox(height: 12),
+          _BusinessesCarousel(),
+          SizedBox(height: 20),
+          _UtilitiesSection(),
+          SizedBox(height: 20),
+          _SectionHeader(title: 'Próximos eventos'),
+          SizedBox(height: 12),
+          _EventsList(),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Hero Banner ───────────────────────────────────────────
+
+class _HeroBanner extends StatelessWidget {
+  const _HeroBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateFormat('EEEE d \'de\' MMMM', 'es').format(DateTime.now());
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primaryDark,
+              AppColors.primary,
+              AppColors.primaryLight,
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Stack(
           children: [
-            // ── Saludo ───────────────────────────────────
-            if (user != null)
-              Text(
-                '${_greeting()}, ${user.name?.split(' ').first ?? ""}!',
-                style: context.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            else
-              Text(
-                'Bienvenido a LatinTerritory',
-                style: context.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AndeanPatternPainter(
+                    color: AppColors.background,
+                    opacity: 0.10,
+                  ),
                 ),
               ),
-
-            const SizedBox(height: AppDimensions.lg),
-
-            // ── Accesos rápidos ───────────────────────────
-            const _QuickAccessGrid(),
-
-            const SizedBox(height: AppDimensions.lg),
-
-            // ── Utilidades ───────────────────────────────
-            const _WeatherCard(),
-            const SizedBox(height: AppDimensions.md),
-            const _ExchangeRatesCard(),
-            const SizedBox(height: AppDimensions.md),
-            const _SportsCard(),
-            const SizedBox(height: AppDimensions.md),
-
-            // ── Sección foros (dinámica) ──────────────────
-            forumsAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (forums) {
-                if (forums.isEmpty) return const SizedBox.shrink();
-                return Column(
-                  children: [
-                    _ForumsSummaryCard(forumCount: forums.length),
-                    const SizedBox(height: AppDimensions.md),
-                  ],
-                );
-              },
             ),
-
-            // ── Próximos eventos (placeholder) ────────────
-            const _SectionPlaceholder(
-              title: 'Próximos Eventos',
-              icon: Icons.event_outlined,
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    today.toUpperCase(),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      letterSpacing: 1.4,
+                      color: AppColors.background.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Descubre tu comunidad\nlatina en Australia 🌎',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 22,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.background,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => context.go('/businesses'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.background,
+                          foregroundColor: AppColors.primaryDark,
+                          minimumSize: const Size(0, 40),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                          ),
+                          textStyle: GoogleFonts.spaceGrotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Explorar'),
+                      ),
+                      OutlinedButton(
+                        onPressed: () => context.pushNamed(RouteNames.register),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.background,
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          side: BorderSide(
+                            color: AppColors.background.withValues(alpha: 0.5),
+                          ),
+                          minimumSize: const Size(0, 40),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                          ),
+                          textStyle: GoogleFonts.spaceGrotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Únete gratis'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-
-            const SizedBox(height: AppDimensions.md),
           ],
         ),
       ),
@@ -106,164 +191,98 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-// ── Grid de accesos rápidos ───────────────────────────────
+// ── Category chips ────────────────────────────────────────
 
-class _QuickAccessGrid extends StatelessWidget {
-  const _QuickAccessGrid();
-
-  static const _items = [
-    _QuickItem(Icons.store,  'Directorio', '/businesses', AppColors.categoryServices),
-    _QuickItem(Icons.work,   'Empleos',    '/jobs',       AppColors.categoryFood),
-    _QuickItem(Icons.event,  'Eventos',    '/events',     AppColors.categoryShopping),
-    _QuickItem(Icons.forum,  'Foros',      '/forums',     AppColors.categoryEntertainment),
-  ];
+class _CategoryChips extends StatefulWidget {
+  const _CategoryChips();
 
   @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppDimensions.sm,
-      crossAxisSpacing: AppDimensions.sm,
-      childAspectRatio: 2.2,
-      children: _items.map((item) => _QuickAccessCard(item: item)).toList(),
-    );
-  }
+  State<_CategoryChips> createState() => _CategoryChipsState();
 }
 
-class _QuickAccessCard extends StatelessWidget {
-  const _QuickAccessCard({required this.item});
-  final _QuickItem item;
+class _CategoryChipsState extends State<_CategoryChips> {
+  static const _categories = [
+    _CategoryChipData(label: 'Todos', path: null),
+    _CategoryChipData(label: 'Negocios', path: '/businesses'),
+    _CategoryChipData(label: 'Empleos', path: '/jobs'),
+    _CategoryChipData(label: 'Eventos', path: '/events'),
+    _CategoryChipData(label: 'Foros', path: '/forums'),
+  ];
+
+  int _selected = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => context.go(item.path),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.sm),
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: Icon(item.icon, color: item.color),
-              ),
-              const SizedBox(width: AppDimensions.sm),
-              Text(
-                item.label,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-        ),
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final cat = _categories[i];
+          final selected = i == _selected;
+          return _Chip(
+            label: cat.label,
+            selected: selected,
+            onTap: () {
+              setState(() => _selected = i);
+              if (cat.path != null) context.go(cat.path!);
+            },
+          );
+        },
       ),
     );
   }
 }
 
-class _QuickItem {
-  const _QuickItem(this.icon, this.label, this.path, this.color);
-  final IconData icon;
+class _CategoryChipData {
+  const _CategoryChipData({required this.label, this.path});
   final String label;
-  final String path;
-  final Color color;
+  final String? path;
 }
 
-// ── Tarjetas de utilidades ────────────────────────────────
-
-class _WeatherCard extends StatelessWidget {
-  const _WeatherCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return _UtilityCard(
-      icon: Icons.wb_sunny_outlined,
-      iconColor: Colors.blue,
-      label: 'Clima',
-      onTap: () => context.go('/weather'),
-    );
-  }
-}
-
-class _ExchangeRatesCard extends StatelessWidget {
-  const _ExchangeRatesCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return _UtilityCard(
-      icon: Icons.currency_exchange,
-      iconColor: AppColors.secondary,
-      label: 'Tasas de Cambio',
-      onTap: () => context.go('/exchange'),
-    );
-  }
-}
-
-class _SportsCard extends StatelessWidget {
-  const _SportsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return _UtilityCard(
-      icon: Icons.sports_soccer,
-      iconColor: AppColors.success,
-      label: 'Deportes',
-      onTap: () => context.go('/sports'),
-    );
-  }
-}
-
-/// Tarjeta genérica reutilizable para accesos de utilidades.
-class _UtilityCard extends StatelessWidget {
-  const _UtilityCard({
-    required this.icon,
-    required this.iconColor,
+class _Chip extends StatelessWidget {
+  const _Chip({
     required this.label,
+    required this.selected,
     required this.onTap,
   });
 
-  final IconData icon;
-  final Color iconColor;
   final String label;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.sm),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: Icon(icon, color: iconColor),
-              ),
-              const SizedBox(width: AppDimensions.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-            ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = selected
+        ? AppColors.primary
+        : isDark
+            ? AppColors.darkSurfaceVariant
+            : AppColors.surfaceVariant;
+    final fg = selected
+        ? Colors.white
+        : isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.textSecondary;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: fg,
           ),
         ),
       ),
@@ -271,94 +290,388 @@ class _UtilityCard extends StatelessWidget {
   }
 }
 
-// ── Foros activos (dinámico) ──────────────────────────────
+// ── Section header ────────────────────────────────────────
 
-class _ForumsSummaryCard extends StatelessWidget {
-  const _ForumsSummaryCard({required this.forumCount});
-  final int forumCount;
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => context.go('/forums'),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.categoryEntertainment.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: const Icon(Icons.forum_outlined,
-                    color: AppColors.categoryEntertainment),
-              ),
-              const SizedBox(width: AppDimensions.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Foros de la Comunidad',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    Text(
-                      '$forumCount foro${forumCount == 1 ? '' : 's'} activo${forumCount == 1 ? '' : 's'}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Placeholder de sección ────────────────────────────────
-
-class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({required this.title, required this.icon});
   final String title;
-  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+    return Text(
+      title,
+      style: GoogleFonts.spaceGrotesk(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: AppColors.textTertiary),
-          const SizedBox(height: AppDimensions.sm),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+    );
+  }
+}
+
+// ── Businesses carousel ───────────────────────────────────
+
+class _BusinessSample {
+  const _BusinessSample({
+    required this.name,
+    required this.flag,
+    required this.category,
+    required this.color,
+  });
+
+  final String name;
+  final String flag;
+  final String category;
+  final Color color;
+}
+
+class _BusinessesCarousel extends StatelessWidget {
+  const _BusinessesCarousel();
+
+  static const _items = [
+    _BusinessSample(
+      name: 'La Colombiana',
+      flag: '🇨🇴',
+      category: 'Restaurante',
+      color: AppColors.latinRed,
+    ),
+    _BusinessSample(
+      name: 'Mistura Peruana',
+      flag: '🇵🇪',
+      category: 'Gastronomía',
+      color: AppColors.latinGold,
+    ),
+    _BusinessSample(
+      name: 'Tienda BsAs',
+      flag: '🇦🇷',
+      category: 'Artesanías',
+      color: AppColors.latinSkyBlue,
+    ),
+    _BusinessSample(
+      name: 'Construye Latino',
+      flag: '🇲🇽',
+      category: 'Construcción',
+      color: AppColors.latinGreen,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 168,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _items.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, i) {
+          final item = _items[i];
+          return _BusinessCard(item: item);
+        },
+      ),
+    );
+  }
+}
+
+class _BusinessCard extends StatelessWidget {
+  const _BusinessCard({required this.item});
+
+  final _BusinessSample item;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: () => context.go('/businesses'),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
           ),
-          const SizedBox(height: AppDimensions.xs),
-          Text(
-            'Próximamente',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textTertiary,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 84,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [item.color, item.color.withValues(alpha: 0.6)],
                 ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.radiusLg),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(item.flag, style: const TextStyle(fontSize: 36)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.category,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Events list ───────────────────────────────────────────
+
+class _EventSample {
+  const _EventSample({
+    required this.title,
+    required this.dateLabel,
+    required this.color,
+  });
+
+  final String title;
+  final String dateLabel;
+  final Color color;
+}
+
+class _EventsList extends StatelessWidget {
+  const _EventsList();
+
+  static const _items = [
+    _EventSample(
+      title: 'Noche de Salsa y Cumbia',
+      dateLabel: 'Sáb 28 Jun',
+      color: AppColors.latinPurple,
+    ),
+    _EventSample(
+      title: 'Feria Gastronómica Latina',
+      dateLabel: 'Dom 6 Jul',
+      color: AppColors.primary,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      children: [
+        for (var i = 0; i < _items.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          InkWell(
+            onTap: () => context.go('/events'),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.surface,
+                borderRadius:
+                    BorderRadius.circular(AppDimensions.radiusLg),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.border,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _items[i].color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.celebration,
+                      color: _items[i].color,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _items[i].title,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _items[i].dateLabel,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: isDark
+                        ? AppColors.darkTextTertiary
+                        : AppColors.textTertiary,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+// ── Utilities section ─────────────────────────────────────
+
+class _UtilitiesSection extends StatelessWidget {
+  const _UtilitiesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Utilidades',
+          style: GoogleFonts.spaceGrotesk(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _UtilityButton(
+              icon: Icons.wb_sunny,
+              label: 'Clima',
+              color: AppColors.latinSkyBlue,
+              onTap: () => context.go('/weather'),
+            ),
+            const SizedBox(width: 10),
+            _UtilityButton(
+              icon: Icons.currency_exchange,
+              label: 'Divisas',
+              color: AppColors.secondary,
+              onTap: () => context.go('/exchange'),
+            ),
+            const SizedBox(width: 10),
+            _UtilityButton(
+              icon: Icons.sports_soccer,
+              label: 'Deportes',
+              color: AppColors.latinRed,
+              onTap: () => context.go('/sports'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _UtilityButton extends StatelessWidget {
+  const _UtilityButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface =
+        isDark ? AppColors.darkSurface : AppColors.surface;
+    final borderColor =
+        isDark ? AppColors.darkBorder : AppColors.border;
+    final labelColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A1C1208),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 22, color: color),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

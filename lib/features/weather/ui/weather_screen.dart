@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/weather/data/models/weather_models.dart';
 import 'package:latinterritory/features/weather/providers/weather_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
 class WeatherScreen extends ConsumerWidget {
   const WeatherScreen({super.key});
@@ -29,7 +31,7 @@ class WeatherScreen extends ConsumerWidget {
                 vertical: AppDimensions.sm,
               ),
               itemCount: allWeatherCities.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(width: AppDimensions.xs),
               itemBuilder: (context, index) {
                 final city = allWeatherCities[index];
@@ -38,15 +40,23 @@ class WeatherScreen extends ConsumerWidget {
                   label: Text(
                     city.name,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : null,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                   selected: isSelected,
                   onSelected: (_) =>
                       ref.read(selectedCityProvider.notifier).select(city),
                   selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
+                  showCheckmark: false,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusFull),
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               },
@@ -62,7 +72,8 @@ class WeatherScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.cloud_off, size: 48, color: AppColors.error),
+                    const Icon(Icons.cloud_off,
+                        size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
                     const Text('No se pudo cargar el clima.'),
                     const SizedBox(height: AppDimensions.md),
@@ -118,74 +129,91 @@ class _CurrentWeatherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.lg),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.blue.shade600,
-              Colors.blue.shade400,
+              Color(0xFF1D5FA8),
+              AppColors.latinSkyBlue,
+              AppColors.secondaryLight,
             ],
           ),
         ),
-        child: Column(
+        child: Stack(
           children: [
-            Text(
-              '${city.name}, ${city.country}',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AndeanPatternPainter(
+                    color: Colors.white,
+                    opacity: 0.07,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: AppDimensions.sm),
-            Icon(
-              _weatherIcon(current.weatherCode),
-              size: 64,
-              color: Colors.white,
-            ),
-            const SizedBox(height: AppDimensions.sm),
-            Text(
-              '${current.temperatureC.round()}°C',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 52,
-                fontWeight: FontWeight.w200,
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.lg),
+              child: Column(
+                children: [
+                  Text(
+                    '${city.name}, ${city.country}',
+                    style: GoogleFonts.dmSans(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.sm),
+                  Icon(
+                    _weatherIcon(current.weatherCode),
+                    size: 64,
+                    color: const Color(0xFFFFF176),
+                  ),
+                  const SizedBox(height: AppDimensions.sm),
+                  Text(
+                    '${current.temperatureC.round()}°',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 72,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                  Text(
+                    current.weatherTextEs,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _WeatherStat(
+                        icon: Icons.thermostat,
+                        label: 'Sensación',
+                        value: '${current.feelsLikeC.round()}°C',
+                      ),
+                      _WeatherStat(
+                        icon: Icons.water_drop,
+                        label: 'Humedad',
+                        value: '${current.humidityPercent}%',
+                      ),
+                      _WeatherStat(
+                        icon: Icons.air,
+                        label: 'Viento',
+                        value: '${current.windSpeedKmh.round()} km/h',
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            Text(
-              current.weatherTextEs,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: AppDimensions.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _WeatherStat(
-                  icon: Icons.thermostat,
-                  label: 'Sensación',
-                  value: '${current.feelsLikeC.round()}°C',
-                ),
-                _WeatherStat(
-                  icon: Icons.water_drop,
-                  label: 'Humedad',
-                  value: '${current.humidityPercent}%',
-                ),
-                _WeatherStat(
-                  icon: Icons.air,
-                  label: 'Viento',
-                  value: '${current.windSpeedKmh.round()} km/h',
-                ),
-              ],
             ),
           ],
         ),
@@ -260,7 +288,7 @@ class _HourlyForecast extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: hours.length,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
                 const SizedBox(width: AppDimensions.sm),
             itemBuilder: (context, index) {
               final h = hours[index];

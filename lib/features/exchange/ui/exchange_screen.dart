@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/features/exchange/data/models/exchange_models.dart';
 import 'package:latinterritory/features/exchange/providers/exchange_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
 // ── Currency metadata ─────────────────────────────────────
 
@@ -152,155 +154,217 @@ class _ConverterCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(exchangeConverterProvider);
     final notifier = ref.read(exchangeConverterProvider.notifier);
-    final inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-    );
+    final innerFill = Colors.white.withValues(alpha: 0.16);
+    final innerBorder = Colors.white.withValues(alpha: 0.25);
 
-    return Card(
-      elevation: AppDimensions.cardElevation,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    InputDecoration field({String? prefixText}) => InputDecoration(
+          filled: true,
+          fillColor: innerFill,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.sm,
+            vertical: AppDimensions.sm,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            borderSide: BorderSide(color: innerBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            borderSide: BorderSide(color: innerBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            borderSide:
+                const BorderSide(color: Colors.white, width: 1.5),
+          ),
+          prefixText: prefixText,
+          prefixStyle: const TextStyle(color: Colors.white),
+        );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.secondary, AppColors.secondaryDark],
+          ),
+        ),
+        child: Stack(
           children: [
-            Row(
-              children: [
-                const Icon(Icons.currency_exchange,
-                    color: AppColors.secondary, size: AppDimensions.iconMd),
-                const SizedBox(width: AppDimensions.sm),
-                Text(
-                  'Convertidor',
-                  style: context.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.md),
-
-            // ── De ────────────────────────────────────
-            Text(
-              'De',
-              style: context.textTheme.labelMedium
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppDimensions.xs),
-            Row(
-              children: [
-                Expanded(
-                  child: _CurrencyDropdown(
-                    value: s.fromCurrency,
-                    onChanged: notifier.setFromCurrency,
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: AndeanPatternPainter(
+                    color: Colors.white,
+                    opacity: 0.10,
                   ),
                 ),
-                const SizedBox(width: AppDimensions.sm),
-                Expanded(
-                  child: TextField(
-                    controller: amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.currency_exchange,
+                          color: Colors.white, size: AppDimensions.iconMd),
+                      const SizedBox(width: AppDimensions.sm),
+                      Text(
+                        'Convertidor',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
-                    textAlign: TextAlign.end,
-                    style: context.textTheme.bodyLarge
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.sm,
-                        vertical: AppDimensions.sm,
+                  ),
+                  const SizedBox(height: AppDimensions.md),
+
+                  // ── De ────────────────────────────────
+                  Text(
+                    'De',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CurrencyDropdown(
+                          value: s.fromCurrency,
+                          onChanged: notifier.setFromCurrency,
+                        ),
                       ),
-                      border: inputBorder,
-                      prefixText: '${_flag(s.fromCurrency)} ',
-                    ),
-                    onChanged: onAmountChanged,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppDimensions.xs),
-
-            // ── Rate + swap button ────────────────────
-            Row(
-              children: [
-                Expanded(
-                  child: rateAsync.when(
-                    loading: () => const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    error: (e, _) => Text(
-                      'Error al obtener tasa',
-                      style: context.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.error),
-                    ),
-                    data: (conv) => Text(
-                      '1 ${conv.from.currency} = ${_fmt(conv.rate)} ${conv.to.currency}',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontStyle: FontStyle.italic,
+                      const SizedBox(width: AppDimensions.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: amountController,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[\d.]')),
+                          ],
+                          textAlign: TextAlign.end,
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration:
+                              field(prefixText: '${_flag(s.fromCurrency)} '),
+                          onChanged: onAmountChanged,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-                IconButton(
-                  onPressed: notifier.swap,
-                  icon: const Icon(Icons.swap_vert_rounded),
-                  color: AppColors.primary,
-                  tooltip: 'Intercambiar monedas',
-                ),
-              ],
-            ),
 
-            const SizedBox(height: AppDimensions.xs),
+                  const SizedBox(height: AppDimensions.sm),
 
-            // ── A ─────────────────────────────────────
-            Text(
-              'A',
-              style: context.textTheme.labelMedium
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppDimensions.xs),
-            Row(
-              children: [
-                Expanded(
-                  child: _CurrencyDropdown(
-                    value: s.toCurrency,
-                    onChanged: notifier.setToCurrency,
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.sm),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.sm,
-                      vertical: 13,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusSm),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text('${_flag(s.toCurrency)} '),
-                        Flexible(
-                          child: Text(
-                            toAmount != null ? _fmt(toAmount!) : '—',
-                            style: context.textTheme.bodyLarge
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
+                  // ── Rate + swap button ────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: rateAsync.when(
+                          loading: () => const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          error: (e, _) => Text(
+                            'Error al obtener tasa',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                          data: (conv) => Text(
+                            '1 ${conv.from.currency} = ${_fmt(conv.rate)} ${conv.to.currency}',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color:
+                                  Colors.white.withValues(alpha: 0.85),
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
-                      ],
+                      ),
+                      IconButton(
+                        onPressed: notifier.swap,
+                        icon: const Icon(Icons.swap_vert_rounded),
+                        color: Colors.white,
+                        tooltip: 'Intercambiar monedas',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AppDimensions.xs),
+
+                  // ── A ─────────────────────────────────
+                  Text(
+                    'A',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppDimensions.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CurrencyDropdown(
+                          value: s.toCurrency,
+                          onChanged: notifier.setToCurrency,
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.sm),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.sm,
+                            vertical: 13,
+                          ),
+                          decoration: BoxDecoration(
+                            color: innerFill,
+                            border: Border.all(color: innerBorder),
+                            borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusSm),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${_flag(s.toCurrency)} ',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              Flexible(
+                                child: Text(
+                                  toAmount != null ? _fmt(toAmount!) : '—',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
