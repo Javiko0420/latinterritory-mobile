@@ -23,7 +23,7 @@ class EditProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Editar Perfil'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),
@@ -40,10 +40,10 @@ class EditProfileScreen extends ConsumerWidget {
                 const Icon(Icons.error_outline,
                     size: 48, color: AppColors.error),
                 const SizedBox(height: AppDimensions.md),
-                const Text('Could not load profile data.'),
+                const Text('No se pudo cargar el perfil.'),
                 const SizedBox(height: AppDimensions.md),
                 LtButton(
-                  label: 'Retry',
+                  label: 'Reintentar',
                   icon: Icons.refresh,
                   onPressed: () => ref.invalidate(profileProvider),
                 ),
@@ -109,7 +109,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: DateTime(now.year - 16, now.month, now.day),
-      helpText: 'Select your date of birth',
+      helpText: 'Selecciona tu fecha de nacimiento',
     );
     if (picked != null) setState(() => _dateOfBirth = picked);
   }
@@ -145,7 +145,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
     if (!mounted) return;
 
     if (success) {
-      context.showSnackBar('Profile updated successfully!');
+      context.showSnackBar('¡Perfil actualizado correctamente!');
       context.pop();
     } else {
       final error = ref.read(editProfileNotifierProvider).error;
@@ -174,8 +174,8 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
               // ── Name ─────────────────────────────────
               LtTextField(
                 controller: _nameController,
-                label: 'Full Name *',
-                hint: 'Your full name',
+                label: 'Nombre completo *',
+                hint: 'Tu nombre completo',
                 textInputAction: TextInputAction.next,
                 enabled: !isLoading,
                 validator: Validators.name,
@@ -185,8 +185,8 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
               // ── Nickname ──────────────────────────────
               LtTextField(
                 controller: _nicknameController,
-                label: 'Nickname',
-                hint: 'Letters, numbers and _ (3–20 chars)',
+                label: 'Apodo (nickname)',
+                hint: 'Letras, números y _ (3–20 caracteres)',
                 textInputAction: TextInputAction.next,
                 enabled: !isLoading,
                 validator: (value) {
@@ -199,8 +199,8 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
               // ── Phone ─────────────────────────────────
               LtTextField(
                 controller: _phoneController,
-                label: 'Phone Number',
-                hint: '+61 4XX XXX XXX or 04XX XXX XXX',
+                label: 'Número de Teléfono',
+                hint: '+61 4XX XXX XXX ó 04XX XXX XXX',
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
                 enabled: !isLoading,
@@ -217,7 +217,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
 
               // ── Date of Birth ─────────────────────────
               Text(
-                'Date of Birth',
+                'Fecha de Nacimiento',
                 style: context.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -230,7 +230,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
               ),
               const SizedBox(height: AppDimensions.xs),
               const Text(
-                'You must be at least 16 years old.',
+                'Debes tener al menos 16 años.',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textTertiary,
@@ -241,7 +241,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
 
               // ── Save Button ───────────────────────────
               LtButton(
-                label: 'Save Changes',
+                label: 'Guardar Cambios',
                 onPressed: _handleSave,
                 isLoading: isLoading,
               ),
@@ -258,7 +258,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
     final regex =
         RegExp(r'^(\+614\d{8}|04\d{8}|\+61[2-9]\d{8}|0[2-9]\d{8})$');
     if (!regex.hasMatch(cleaned)) {
-      return 'Enter a valid Australian phone number (e.g. 0412 345 678).';
+      return 'Ingresa un número australiano válido (ej. 0412 345 678).';
     }
     return null;
   }
@@ -281,7 +281,7 @@ class _DatePickerField extends StatelessWidget {
       ? '${date!.day.toString().padLeft(2, '0')}/'
           '${date!.month.toString().padLeft(2, '0')}/'
           '${date!.year}'
-      : 'Select date of birth';
+      : 'Selecciona tu fecha de nacimiento';
 
   @override
   Widget build(BuildContext context) {

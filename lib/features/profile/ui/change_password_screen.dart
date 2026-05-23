@@ -48,7 +48,7 @@ class _ChangePasswordScreenState
     // Extra UI-level guard: new password must differ from current.
     if (currentPw == newPw) {
       context.showErrorSnackBar(
-        'New password must be different from your current password.',
+        'La nueva contraseña debe ser diferente a la actual.',
       );
       return;
     }
@@ -64,7 +64,7 @@ class _ChangePasswordScreenState
     if (!mounted) return;
 
     if (success) {
-      context.showSnackBar('Password changed successfully!');
+      context.showSnackBar('¡Contraseña cambiada correctamente!');
       context.pop();
     } else {
       final error = ref.read(changePasswordNotifierProvider).error;
@@ -82,7 +82,7 @@ class _ChangePasswordScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Change Password'),
+        title: const Text('Cambiar Contraseña'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: isLoading ? null : () => context.pop(),
@@ -105,8 +105,8 @@ class _ChangePasswordScreenState
                 // ── Current Password ──────────────────────
                 LtTextField(
                   controller: _currentPasswordController,
-                  label: 'Current Password',
-                  hint: 'Your current password',
+                  label: 'Contraseña Actual',
+                  hint: 'Tu contraseña actual',
                   obscureText: _obscureCurrent,
                   textInputAction: TextInputAction.next,
                   enabled: !isLoading,
@@ -123,8 +123,8 @@ class _ChangePasswordScreenState
                 // ── New Password ──────────────────────────
                 LtTextField(
                   controller: _newPasswordController,
-                  label: 'New Password',
-                  hint: 'Min 8 chars · A-z · 0-9 · @\$!%*?&',
+                  label: 'Nueva Contraseña',
+                  hint: 'Mín. 8 chars · A-z · 0-9 · @\$!%*?&',
                   obscureText: _obscureNew,
                   textInputAction: TextInputAction.next,
                   enabled: !isLoading,
@@ -151,8 +151,8 @@ class _ChangePasswordScreenState
                 // ── Confirm New Password ──────────────────
                 LtTextField(
                   controller: _confirmPasswordController,
-                  label: 'Confirm New Password',
-                  hint: 'Repeat your new password',
+                  label: 'Confirmar Nueva Contraseña',
+                  hint: 'Repite tu nueva contraseña',
                   obscureText: _obscureConfirm,
                   textInputAction: TextInputAction.done,
                   enabled: !isLoading,
@@ -172,7 +172,7 @@ class _ChangePasswordScreenState
 
                 // ── Submit Button ─────────────────────────
                 LtButton(
-                  label: 'Change Password',
+                  label: 'Cambiar Contraseña',
                   onPressed: _handleChangePassword,
                   isLoading: isLoading,
                 ),
@@ -207,7 +207,7 @@ class _PasswordInfoBanner extends StatelessWidget {
           SizedBox(width: AppDimensions.sm),
           Expanded(
             child: Text(
-              'Choose a strong password. You will be kept signed in after changing it.',
+              'Elige una contraseña segura. Continuarás con tu sesión activa tras el cambio.',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.info,
@@ -231,11 +231,11 @@ class _PasswordRulesHint extends StatelessWidget {
       spacing: AppDimensions.sm,
       runSpacing: AppDimensions.xs,
       children: [
-        _RuleChip(label: '8+ chars'),
-        _RuleChip(label: 'Uppercase'),
-        _RuleChip(label: 'Lowercase'),
-        _RuleChip(label: 'Number'),
-        _RuleChip(label: 'Special (@\$!%*?&)'),
+        _RuleChip(label: '8+ caracteres'),
+        _RuleChip(label: 'Mayúscula'),
+        _RuleChip(label: 'Minúscula'),
+        _RuleChip(label: 'Número'),
+        _RuleChip(label: 'Especial (@\$!%*?&)'),
       ],
     );
   }

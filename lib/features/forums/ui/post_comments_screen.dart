@@ -55,13 +55,13 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
         FocusScope.of(context).unfocus();
         ref.invalidate(postCommentsProvider(widget.post.id));
         ref.invalidate(forumPostsProvider(widget.forumId));
-        context.showSnackBar('Comment added!');
+        context.showSnackBar('¡Comentario publicado!');
       }
     } catch (e) {
       if (mounted) {
         final message = e is DioException
-            ? (e.error?.toString() ?? 'Failed to post comment.')
-            : 'Failed to post comment.';
+            ? (e.error?.toString() ?? 'No se pudo publicar el comentario.')
+            : 'No se pudo publicar el comentario.';
         context.showErrorSnackBar(message);
       }
     } finally {
@@ -132,7 +132,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
                           onPressed: () => ref.invalidate(
                               postCommentsProvider(widget.post.id)),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: const Text('Reintentar'),
                         ),
                       ),
                     ),
@@ -197,7 +197,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
                       maxLines: 3,
                       minLines: 1,
                       decoration: InputDecoration(
-                        hintText: 'Write a comment...',
+                        hintText: 'Escribe un comentario...',
                         counterText: '',
                         filled: true,
                         fillColor: Theme.of(context)

@@ -11,12 +11,12 @@ class LtMainScaffold extends StatelessWidget {
   final Widget child;
 
   static const _tabs = [
-    _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home', path: '/home'),
-    _TabItem(icon: Icons.store_outlined, activeIcon: Icons.store, label: 'Directory', path: '/businesses'),
-    _TabItem(icon: Icons.work_outline, activeIcon: Icons.work, label: 'Jobs', path: '/jobs'),
-    _TabItem(icon: Icons.event_outlined, activeIcon: Icons.event, label: 'Events', path: '/events'),
-    _TabItem(icon: Icons.forum_outlined, activeIcon: Icons.forum, label: 'Forums', path: '/forums'),
-    _TabItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', path: '/profile'),
+    _TabItem(icon: Icons.home_outlined,   activeIcon: Icons.home,         label: 'Inicio',     path: '/home'),
+    _TabItem(icon: Icons.store_outlined,  activeIcon: Icons.store,        label: 'Directorio', path: '/businesses'),
+    _TabItem(icon: Icons.work_outline,    activeIcon: Icons.work,         label: 'Empleos',    path: '/jobs'),
+    _TabItem(icon: Icons.event_outlined,  activeIcon: Icons.event,        label: 'Eventos',    path: '/events'),
+    _TabItem(icon: Icons.forum_outlined,  activeIcon: Icons.forum,        label: 'Foros',      path: '/forums'),
+    _TabItem(icon: Icons.person_outline,  activeIcon: Icons.person,       label: 'Perfil',     path: '/profile'),
   ];
 
   int _currentIndex(BuildContext context) {
@@ -40,6 +40,7 @@ class LtMainScaffold extends StatelessWidget {
         },
         backgroundColor: Theme.of(context).colorScheme.surface,
         indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: _tabs
             .map(
               (tab) => NavigationDestination(

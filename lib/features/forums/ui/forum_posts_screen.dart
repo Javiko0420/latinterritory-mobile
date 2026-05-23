@@ -49,7 +49,7 @@ class _ForumPostsScreenState extends ConsumerState<ForumPostsScreen> {
         FocusScope.of(context).unfocus();
         context.showSnackBar('Post created!');
       } else {
-        context.showErrorSnackBar('Failed to create post.');
+        context.showErrorSnackBar('No se pudo publicar el mensaje.');
       }
     }
   }
@@ -78,13 +78,13 @@ class _ForumPostsScreenState extends ConsumerState<ForumPostsScreen> {
                     Icon(Icons.error_outline,
                         size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
-                    const Text('Could not load posts.'),
+                    const Text('No se pudieron cargar los mensajes.'),
                     const SizedBox(height: AppDimensions.md),
                     TextButton.icon(
                       onPressed: () => ref.invalidate(
                           forumPostsProvider(widget.forum.id)),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
@@ -100,7 +100,7 @@ class _ForumPostsScreenState extends ConsumerState<ForumPostsScreen> {
                             size: 48, color: AppColors.textTertiary),
                         const SizedBox(height: AppDimensions.md),
                         Text(
-                          'No posts yet. Be the first!',
+                          '¡Aún no hay mensajes. ¡Sé el primero!',
                           style: context.textTheme.bodyLarge?.copyWith(
                             color: AppColors.textSecondary,
                           ),

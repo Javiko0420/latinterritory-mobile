@@ -55,7 +55,7 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
     final currentFilter = ref.watch(jobFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Jobs')),
+      appBar: AppBar(title: const Text('Empleos')),
       body: Column(
         children: [
           // ── Search Bar ──────────────────────────────
@@ -70,7 +70,7 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
               controller: _searchController,
               onChanged: _onSearch,
               decoration: InputDecoration(
-                hintText: 'Search jobs...',
+                hintText: 'Buscar empleos...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -142,12 +142,12 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
                     const Icon(Icons.error_outline,
                         size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
-                    const Text('Could not load jobs.'),
+                    const Text('No se pudieron cargar los empleos.'),
                     const SizedBox(height: AppDimensions.md),
                     TextButton.icon(
                       onPressed: () => ref.invalidate(jobListProvider),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
@@ -162,7 +162,7 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
                             size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: AppDimensions.md),
                         Text(
-                          'No jobs available',
+                          'No hay empleos disponibles',
                           style: context.textTheme.titleMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -174,7 +174,7 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
                               _searchController.clear();
                               ref.read(jobFilterProvider.notifier).clear();
                             },
-                            child: const Text('Clear filters'),
+                            child: const Text('Limpiar filtros'),
                           ),
                       ],
                     ),
@@ -209,9 +209,10 @@ class _JobCard extends StatelessWidget {
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('MMM d').format(date);
+    if (diff.inHours < 1) return 'Hace un momento';
+    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
+    if (diff.inDays < 7) return 'Hace ${diff.inDays}d';
+    return DateFormat('d MMM').format(date);
   }
 
   @override

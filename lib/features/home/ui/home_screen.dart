@@ -5,15 +5,25 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
+import 'package:latinterritory/features/forums/providers/forum_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
+  /// Saludo contextual según la hora del día.
+  static String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Buenos días';
+    if (hour < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.value?.user;
+    final forumsAsync = ref.watch(forumsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -27,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
           else
             TextButton(
               onPressed: () => context.pushNamed(RouteNames.login),
-              child: const Text('Log In'),
+              child: const Text('Iniciar Sesión'),
             ),
         ],
       ),
@@ -36,17 +46,17 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Welcome ─────────────────────────────────
+            // ── Saludo ───────────────────────────────────
             if (user != null)
               Text(
-                'Welcome, ${user.name ?? "there"}!',
+                '${_greeting()}, ${user.name?.split(' ').first ?? ""}!',
                 style: context.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               )
             else
               Text(
-                'Welcome to LatinTerritory',
+                'Bienvenido a LatinTerritory',
                 style: context.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -54,27 +64,41 @@ class HomeScreen extends ConsumerWidget {
 
             const SizedBox(height: AppDimensions.lg),
 
-            // ── Quick Access Grid ───────────────────────
-            _QuickAccessGrid(),
+            // ── Accesos rápidos ───────────────────────────
+            const _QuickAccessGrid(),
 
             const SizedBox(height: AppDimensions.lg),
 
-            // ── Weather ─────────────────────────────────
-            _WeatherCard(),
+            // ── Utilidades ───────────────────────────────
+            const _WeatherCard(),
             const SizedBox(height: AppDimensions.md),
-            _ExchangeRatesCard(),
+            const _ExchangeRatesCard(),
             const SizedBox(height: AppDimensions.md),
-            _SportsCard(),
+            const _SportsCard(),
             const SizedBox(height: AppDimensions.md),
-            const _SectionPlaceholder(
-              title: 'Latest from Forums',
-              icon: Icons.forum_outlined,
+
+            // ── Sección foros (dinámica) ──────────────────
+            forumsAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (forums) {
+                if (forums.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    _ForumsSummaryCard(forumCount: forums.length),
+                    const SizedBox(height: AppDimensions.md),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: AppDimensions.md),
+
+            // ── Próximos eventos (placeholder) ────────────
             const _SectionPlaceholder(
-              title: 'Upcoming Events',
+              title: 'Próximos Eventos',
               icon: Icons.event_outlined,
             ),
+
+            const SizedBox(height: AppDimensions.md),
           ],
         ),
       ),
@@ -82,12 +106,16 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+// ── Grid de accesos rápidos ───────────────────────────────
+
 class _QuickAccessGrid extends StatelessWidget {
-  final _items = const [
-    _QuickItem(Icons.store, 'Directory', '/businesses', AppColors.categoryServices),
-    _QuickItem(Icons.work, 'Jobs', '/jobs', AppColors.categoryFood),
-    _QuickItem(Icons.event, 'Events', '/events', AppColors.categoryShopping),
-    _QuickItem(Icons.forum, 'Forums', '/forums', AppColors.categoryEntertainment),
+  const _QuickAccessGrid();
+
+  static const _items = [
+    _QuickItem(Icons.store,  'Directorio', '/businesses', AppColors.categoryServices),
+    _QuickItem(Icons.work,   'Empleos',    '/jobs',       AppColors.categoryFood),
+    _QuickItem(Icons.event,  'Eventos',    '/events',     AppColors.categoryShopping),
+    _QuickItem(Icons.forum,  'Foros',      '/forums',     AppColors.categoryEntertainment),
   ];
 
   @override
@@ -99,9 +127,7 @@ class _QuickAccessGrid extends StatelessWidget {
       mainAxisSpacing: AppDimensions.sm,
       crossAxisSpacing: AppDimensions.sm,
       childAspectRatio: 2.2,
-      children: _items
-          .map((item) => _QuickAccessCard(item: item))
-          .toList(),
+      children: _items.map((item) => _QuickAccessCard(item: item)).toList(),
     );
   }
 }
@@ -151,49 +177,69 @@ class _QuickItem {
   final Color color;
 }
 
+// ── Tarjetas de utilidades ────────────────────────────────
+
 class _WeatherCard extends StatelessWidget {
+  const _WeatherCard();
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => context.go('/weather'),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.sm),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: const Icon(Icons.wb_sunny_outlined, color: Colors.blue),
-              ),
-              const SizedBox(width: AppDimensions.sm),
-              Expanded(
-                child: Text(
-                  'Weather',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-            ],
-          ),
-        ),
-      ),
+    return _UtilityCard(
+      icon: Icons.wb_sunny_outlined,
+      iconColor: Colors.blue,
+      label: 'Clima',
+      onTap: () => context.go('/weather'),
     );
   }
 }
 
 class _ExchangeRatesCard extends StatelessWidget {
+  const _ExchangeRatesCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _UtilityCard(
+      icon: Icons.currency_exchange,
+      iconColor: AppColors.secondary,
+      label: 'Tasas de Cambio',
+      onTap: () => context.go('/exchange'),
+    );
+  }
+}
+
+class _SportsCard extends StatelessWidget {
+  const _SportsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _UtilityCard(
+      icon: Icons.sports_soccer,
+      iconColor: AppColors.success,
+      label: 'Deportes',
+      onTap: () => context.go('/sports'),
+    );
+  }
+}
+
+/// Tarjeta genérica reutilizable para accesos de utilidades.
+class _UtilityCard extends StatelessWidget {
+  const _UtilityCard({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () => context.go('/exchange'),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(AppDimensions.md),
@@ -202,16 +248,15 @@ class _ExchangeRatesCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDimensions.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 ),
-                child: const Icon(Icons.currency_exchange,
-                    color: AppColors.secondary),
+                child: Icon(icon, color: iconColor),
               ),
               const SizedBox(width: AppDimensions.sm),
               Expanded(
                 child: Text(
-                  'Tasas de Cambio',
+                  label,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -226,12 +271,17 @@ class _ExchangeRatesCard extends StatelessWidget {
   }
 }
 
-class _SportsCard extends StatelessWidget {
+// ── Foros activos (dinámico) ──────────────────────────────
+
+class _ForumsSummaryCard extends StatelessWidget {
+  const _ForumsSummaryCard({required this.forumCount});
+  final int forumCount;
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () => context.go('/sports'),
+        onTap: () => context.go('/forums'),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(AppDimensions.md),
@@ -240,19 +290,30 @@ class _SportsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDimensions.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
+                  color: AppColors.categoryEntertainment.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 ),
-                child: const Icon(Icons.sports_soccer,
-                    color: AppColors.success),
+                child: const Icon(Icons.forum_outlined,
+                    color: AppColors.categoryEntertainment),
               ),
               const SizedBox(width: AppDimensions.sm),
               Expanded(
-                child: Text(
-                  'Deportes',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Foros de la Comunidad',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    Text(
+                      '$forumCount foro${forumCount == 1 ? '' : 's'} activo${forumCount == 1 ? '' : 's'}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                    ),
+                  ],
                 ),
               ),
               const Icon(Icons.chevron_right, color: AppColors.textTertiary),
@@ -263,6 +324,8 @@ class _SportsCard extends StatelessWidget {
     );
   }
 }
+
+// ── Placeholder de sección ────────────────────────────────
 
 class _SectionPlaceholder extends StatelessWidget {
   const _SectionPlaceholder({required this.title, required this.icon});
@@ -290,7 +353,7 @@ class _SectionPlaceholder extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.xs),
           Text(
-            'Coming soon',
+            'Próximamente',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textTertiary,
                 ),

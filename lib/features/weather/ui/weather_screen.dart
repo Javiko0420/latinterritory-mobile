@@ -16,7 +16,7 @@ class WeatherScreen extends ConsumerWidget {
     final weatherAsync = ref.watch(weatherProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Weather')),
+      appBar: AppBar(title: const Text('Clima')),
       body: Column(
         children: [
           // ── City Selector ───────────────────────────
@@ -64,12 +64,12 @@ class WeatherScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.cloud_off, size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
-                    const Text('Could not load weather.'),
+                    const Text('No se pudo cargar el clima.'),
                     const SizedBox(height: AppDimensions.md),
                     TextButton.icon(
                       onPressed: () => ref.invalidate(weatherProvider),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
@@ -172,17 +172,17 @@ class _CurrentWeatherCard extends StatelessWidget {
               children: [
                 _WeatherStat(
                   icon: Icons.thermostat,
-                  label: 'Feels like',
+                  label: 'Sensación',
                   value: '${current.feelsLikeC.round()}°C',
                 ),
                 _WeatherStat(
                   icon: Icons.water_drop,
-                  label: 'Humidity',
+                  label: 'Humedad',
                   value: '${current.humidityPercent}%',
                 ),
                 _WeatherStat(
                   icon: Icons.air,
-                  label: 'Wind',
+                  label: 'Viento',
                   value: '${current.windSpeedKmh.round()} km/h',
                 ),
               ],
@@ -250,7 +250,7 @@ class _HourlyForecast extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Next 24 Hours',
+          'Próximas 24 Horas',
           style: context.textTheme.titleMedium
               ?.copyWith(fontWeight: FontWeight.bold),
         ),

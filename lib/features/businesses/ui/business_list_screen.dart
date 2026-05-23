@@ -33,17 +33,32 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
     'OTROS',
   ];
 
+  /// Etiquetas en español para mostrar en la UI.
   static const _categoryLabels = {
-    'GASTRONOMIA': 'Gastronomy',
-    'TECNOLOGIA': 'Technology',
-    'ARTESANIAS': 'Crafts',
-    'SERVICIOS': 'Services',
-    'MODA': 'Fashion',
-    'SALUD': 'Health',
-    'EDUCACION': 'Education',
-    'TURISMO': 'Tourism',
-    'ENTRETENIMIENTO': 'Entertainment',
-    'OTROS': 'Other',
+    'GASTRONOMIA':    'Gastronomía',
+    'TECNOLOGIA':     'Tecnología',
+    'ARTESANIAS':     'Artesanías',
+    'SERVICIOS':      'Servicios',
+    'MODA':           'Moda',
+    'SALUD':          'Salud',
+    'EDUCACION':      'Educación',
+    'TURISMO':        'Turismo',
+    'ENTRETENIMIENTO':'Entretenimiento',
+    'OTROS':          'Otros',
+  };
+
+  /// Ícono representativo de cada categoría para el placeholder.
+  static const _categoryIcons = {
+    'GASTRONOMIA':    Icons.restaurant,
+    'TECNOLOGIA':     Icons.computer,
+    'ARTESANIAS':     Icons.handyman,
+    'SERVICIOS':      Icons.build,
+    'MODA':           Icons.checkroom,
+    'SALUD':          Icons.health_and_safety,
+    'EDUCACION':      Icons.school,
+    'TURISMO':        Icons.travel_explore,
+    'ENTRETENIMIENTO':Icons.theater_comedy,
+    'OTROS':          Icons.store,
   };
 
   @override
@@ -63,7 +78,6 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
   void _onCategoryTap(String? category) {
     final filter = ref.read(businessFilterProvider);
     if (filter.category == category) {
-      // Deselect
       ref.read(businessFilterProvider.notifier).state =
           filter.copyWith(clearCategory: true);
     } else {
@@ -78,10 +92,10 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
     final currentFilter = ref.watch(businessFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Directory')),
+      appBar: AppBar(title: const Text('Directorio')),
       body: Column(
         children: [
-          // ── Search Bar ──────────────────────────────
+          // ── Buscador ────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppDimensions.screenPaddingH,
@@ -93,7 +107,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
               controller: _searchController,
               onChanged: _onSearch,
               decoration: InputDecoration(
-                hintText: 'Search businesses...',
+                hintText: 'Buscar negocios...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -120,7 +134,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
             ),
           ),
 
-          // ── Category Chips ──────────────────────────
+          // ── Chips de categoría ──────────────────────
           SizedBox(
             height: 48,
             child: ListView.separated(
@@ -130,7 +144,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                 vertical: AppDimensions.sm,
               ),
               itemCount: _categories.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(width: AppDimensions.xs),
               itemBuilder: (context, index) {
                 final cat = _categories[index];
@@ -153,7 +167,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
             ),
           ),
 
-          // ── Business List ───────────────────────────
+          // ── Lista de negocios ───────────────────────
           Expanded(
             child: businessesAsync.when(
               loading: () =>
@@ -162,16 +176,16 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline,
+                    const Icon(Icons.error_outline,
                         size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
-                    const Text('Could not load businesses.'),
+                    const Text('No se pudieron cargar los negocios.'),
                     const SizedBox(height: AppDimensions.md),
                     TextButton.icon(
                       onPressed: () =>
                           ref.invalidate(businessListProvider),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
@@ -182,11 +196,11 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.store_outlined,
+                        const Icon(Icons.store_outlined,
                             size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: AppDimensions.md),
                         Text(
-                          'No businesses found',
+                          'No se encontraron negocios',
                           style: context.textTheme.titleMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -200,7 +214,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                                   .read(businessFilterProvider.notifier)
                                   .state = const BusinessFilter();
                             },
-                            child: const Text('Clear filters'),
+                            child: const Text('Limpiar filtros'),
                           ),
                       ],
                     ),
@@ -213,11 +227,14 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                     padding: const EdgeInsets.all(
                         AppDimensions.screenPaddingH),
                     itemCount: paginated.businesses.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(height: AppDimensions.sm),
                     itemBuilder: (context, index) {
                       return _BusinessCard(
                         business: paginated.businesses[index],
+                        categoryIcon:
+                            _categoryIcons[paginated.businesses[index].category]
+                            ?? Icons.store,
                       );
                     },
                   ),
@@ -231,9 +248,12 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
   }
 }
 
+// ── Business Card ─────────────────────────────────────────
+
 class _BusinessCard extends StatelessWidget {
-  const _BusinessCard({required this.business});
+  const _BusinessCard({required this.business, required this.categoryIcon});
   final Business business;
+  final IconData categoryIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +271,7 @@ class _BusinessCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Image ───────────────────────────────
+            // ── Imagen o placeholder de categoría ────
             if (hasImage)
               SizedBox(
                 height: 160,
@@ -259,27 +279,26 @@ class _BusinessCard extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: business.images.first,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    color: AppColors.textTertiary.withValues(alpha: 0.1),
-                    child: const Center(
-                      child: Icon(Icons.image_outlined, size: 32),
-                    ),
+                  placeholder: (_, _) => _CategoryPlaceholder(
+                    icon: categoryIcon,
+                    height: 160,
                   ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: AppColors.textTertiary.withValues(alpha: 0.1),
-                    child: const Center(
-                      child: Icon(Icons.broken_image_outlined, size: 32),
-                    ),
+                  errorWidget: (_, _, _) => _CategoryPlaceholder(
+                    icon: categoryIcon,
+                    height: 160,
                   ),
                 ),
-              ),
+              )
+            else
+              // Placeholder con ícono de categoría cuando no hay imagen
+              _CategoryPlaceholder(icon: categoryIcon, height: 120),
 
             Padding(
               padding: const EdgeInsets.all(AppDimensions.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Category + Verified ─────────────
+                  // ── Categoría + Verificado ──────────
                   Row(
                     children: [
                       Container(
@@ -288,15 +307,16 @@ class _BusinessCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              AppColors.primary.withValues(alpha: 0.12),
+                          color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(
                               AppDimensions.radiusFull),
                         ),
                         child: Text(
                           business.category,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -314,42 +334,41 @@ class _BusinessCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppDimensions.sm),
 
-                  // ── Name ────────────────────────────
+                  // ── Nombre ──────────────────────────
                   Text(
                     business.name,
-                    style:
-                        Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppDimensions.xs),
 
-                  // ── Description ─────────────────────
+                  // ── Descripción ─────────────────────
                   Text(
                     business.description,
-                    style:
-                        Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppDimensions.sm),
 
-                  // ── Location ────────────────────────
+                  // ── Ubicación ───────────────────────
                   if (business.city != null)
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.location_on_outlined,
                           size: 14,
                           color: AppColors.textTertiary,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${business.city}${business.state != null ? ', ${business.state}' : ''}',
+                          '${business.city}'
+                          '${business.state != null ? ', ${business.state}' : ''}',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -362,6 +381,37 @@ class _BusinessCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Placeholder de categoría ──────────────────────────────
+
+class _CategoryPlaceholder extends StatelessWidget {
+  const _CategoryPlaceholder({required this.icon, required this.height});
+  final IconData icon;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.18),
+            AppColors.primaryDark.withValues(alpha: 0.10),
+          ],
+        ),
+      ),
+      child: Icon(
+        icon,
+        size: 48,
+        color: AppColors.primary.withValues(alpha: 0.45),
       ),
     );
   }

@@ -110,7 +110,7 @@ class PostCard extends ConsumerWidget {
                                 .read(togglePostLikeProvider)
                                 .call(post.id, forumId);
                             if (!ok && context.mounted) {
-                              context.showErrorSnackBar('Could not like post.');
+                              context.showErrorSnackBar('No se pudo dar me gusta.');
                             }
                           }
                         : null,
@@ -148,8 +148,8 @@ class PostCard extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Report Post'),
-        content: const Text('Why are you reporting this post?'),
+        title: const Text('Reportar mensaje'),
+        content: const Text('¿Por qué reportas este mensaje?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -168,12 +168,12 @@ class PostCard extends ConsumerWidget {
                 }
               } catch (_) {
                 if (context.mounted) {
-                  context.showErrorSnackBar('Could not report post.');
+                  context.showErrorSnackBar('No se pudo reportar el mensaje.');
                 }
               }
             },
             child: Text(
-              'Report',
+              'Reportar',
               style: TextStyle(color: AppColors.error),
             ),
           ),

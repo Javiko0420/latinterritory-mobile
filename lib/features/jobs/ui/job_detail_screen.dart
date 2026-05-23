@@ -25,13 +25,13 @@ class JobDetailScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: AppDimensions.md),
-              const Text('Could not load job.'),
+              const Text('No se pudo cargar el empleo.'),
               const SizedBox(height: AppDimensions.md),
               TextButton.icon(
                 onPressed: () =>
                     ref.invalidate(jobDetailProvider(jobId)),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: const Text('Reintentar'),
               ),
             ],
           ),

@@ -55,7 +55,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     final currentFilter = ref.watch(eventFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Events')),
+      appBar: AppBar(title: const Text('Eventos')),
       body: Column(
         children: [
           // ── Search Bar ──────────────────────────────
@@ -70,7 +70,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               controller: _searchController,
               onChanged: _onSearch,
               decoration: InputDecoration(
-                hintText: 'Search events...',
+                hintText: 'Buscar eventos...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -142,13 +142,13 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     const Icon(Icons.error_outline,
                         size: 48, color: AppColors.error),
                     const SizedBox(height: AppDimensions.md),
-                    const Text('Could not load events.'),
+                    const Text('No se pudieron cargar los eventos.'),
                     const SizedBox(height: AppDimensions.md),
                     TextButton.icon(
                       onPressed: () =>
                           ref.invalidate(eventListProvider),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
@@ -163,7 +163,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                             size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: AppDimensions.md),
                         Text(
-                          'No upcoming events',
+                          'No hay eventos próximos',
                           style: context.textTheme.titleMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -177,7 +177,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                                   .read(eventFilterProvider.notifier)
                                   .clear();
                             },
-                            child: const Text('Clear filters'),
+                            child: const Text('Limpiar filtros'),
                           ),
                       ],
                     ),
@@ -305,7 +305,7 @@ class _EventCard extends StatelessWidget {
                         const Spacer(),
                         Text(
                           isFree
-                              ? 'Free'
+                              ? 'Gratis'
                               : '\$${event.ticketPrice!.toStringAsFixed(0)} AUD',
                           style: TextStyle(
                             fontSize: 12,

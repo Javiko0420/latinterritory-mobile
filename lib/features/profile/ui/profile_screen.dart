@@ -20,11 +20,11 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('Perfil'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_outlined),
-            tooltip: 'Refresh',
+            tooltip: 'Actualizar',
             onPressed: () => ref.invalidate(profileProvider),
           ),
         ],
@@ -116,7 +116,7 @@ class _ProfileBody extends ConsumerWidget {
 
           // ── Action Buttons ───────────────────────────────
           LtButton(
-            label: 'Edit Profile',
+            label: 'Editar Perfil',
             icon: Icons.edit_outlined,
             onPressed: () => context.pushNamed(RouteNames.editProfile),
           ),
@@ -124,7 +124,7 @@ class _ProfileBody extends ConsumerWidget {
 
           if (profile.hasPassword) ...[
             LtButton(
-              label: 'Change Password',
+              label: 'Cambiar Contraseña',
               icon: Icons.lock_outline,
               variant: LtButtonVariant.outlined,
               onPressed: () =>
@@ -133,9 +133,9 @@ class _ProfileBody extends ConsumerWidget {
             const SizedBox(height: AppDimensions.md),
           ],
 
-          // ── Logout ───────────────────────────────────────
+          // ── Cerrar Sesión ────────────────────────────────
           LtButton(
-            label: 'Log Out',
+            label: 'Cerrar Sesión',
             icon: Icons.logout,
             variant: LtButtonVariant.text,
             onPressed: () => _confirmLogout(context, ref),
@@ -151,17 +151,17 @@ class _ProfileBody extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro que quieres cerrar sesión?'),
         actions: [
           TextButton(
             onPressed: () => ctx.pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () => ctx.pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Log Out'),
+            child: const Text('Cerrar Sesión'),
           ),
         ],
       ),
@@ -319,11 +319,11 @@ class _ProfileInfoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <(IconData, String, String)>[
       if (profile.phoneNumber != null)
-        (Icons.phone_outlined, 'Phone', profile.phoneNumber!),
+        (Icons.phone_outlined, 'Teléfono', profile.phoneNumber!),
       if (profile.dateOfBirth != null)
         (
           Icons.cake_outlined,
-          'Date of Birth',
+          'Fecha de Nacimiento',
           _formatDate(profile.dateOfBirth!)
         ),
     ];
@@ -455,20 +455,20 @@ class _ProfileError extends StatelessWidget {
             ),
             const SizedBox(height: AppDimensions.md),
             Text(
-              'Could not load profile',
+              'No se pudo cargar el perfil',
               style: context.textTheme.titleMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppDimensions.sm),
             const Text(
-              'Check your connection and try again.',
+              'Revisa tu conexión e intenta de nuevo.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textTertiary),
             ),
             const SizedBox(height: AppDimensions.xl),
             LtButton(
-              label: 'Retry',
+              label: 'Reintentar',
               icon: Icons.refresh,
               onPressed: onRetry,
             ),

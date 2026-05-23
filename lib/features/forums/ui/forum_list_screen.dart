@@ -16,11 +16,11 @@ class ForumListScreen extends ConsumerWidget {
     final forumsAsync = ref.watch(forumsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Community Forums')),
+      appBar: AppBar(title: const Text('Foros de la Comunidad')),
       body: forumsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _ErrorView(
-          message: 'Could not load forums.',
+          message: 'No se pudieron cargar los foros.',
           onRetry: () => ref.invalidate(forumsProvider),
         ),
         data: (forums) {
@@ -120,7 +120,7 @@ class _ForumCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AppDimensions.xs),
                   Text(
-                    '${forum.postsCount} posts',
+                    '${forum.postsCount} publicaciones',
                     style: context.textTheme.bodySmall?.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -158,14 +158,14 @@ class _EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: AppDimensions.md),
             Text(
-              'No active forums right now',
+              'No hay foros activos en este momento',
               style: context.textTheme.titleMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppDimensions.xs),
             Text(
-              'Check back later for new discussions.',
+              'Vuelve más tarde para nuevas discusiones.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: AppColors.textTertiary,
               ),
@@ -197,7 +197,7 @@ class _ErrorView extends StatelessWidget {
             TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: const Text('Reintentar'),
             ),
           ],
         ),
