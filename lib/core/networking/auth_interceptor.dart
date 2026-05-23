@@ -157,9 +157,15 @@ class AuthInterceptor extends Interceptor {
   }
 
   /// Auth endpoints — don't retry on 401.
+  ///
+  /// Includes [ApiEndpoints.changePassword] because that endpoint uses
+  /// NextAuth getServerSession (not Bearer JWT) and always returns 401
+  /// for mobile clients. Retrying would be pointless and could trigger
+  /// unnecessary token refreshes.
   bool _isAuthEndpoint(String path) {
     return path == ApiEndpoints.mobileLogin ||
         path == ApiEndpoints.mobileRefresh ||
-        path == ApiEndpoints.mobileGoogle;
+        path == ApiEndpoints.mobileGoogle ||
+        path == ApiEndpoints.changePassword;
   }
 }

@@ -16,6 +16,7 @@ class LtMainScaffold extends StatelessWidget {
     _TabItem(icon: Icons.work_outline, activeIcon: Icons.work, label: 'Jobs', path: '/jobs'),
     _TabItem(icon: Icons.event_outlined, activeIcon: Icons.event, label: 'Events', path: '/events'),
     _TabItem(icon: Icons.forum_outlined, activeIcon: Icons.forum, label: 'Forums', path: '/forums'),
+    _TabItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', path: '/profile'),
   ];
 
   int _currentIndex(BuildContext context) {

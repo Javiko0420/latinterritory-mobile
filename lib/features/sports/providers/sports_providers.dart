@@ -13,12 +13,18 @@ class LeagueOption {
 }
 
 const leagueOptions = [
-  LeagueOption('colombia', 'Colombia', '🇨🇴'),
-  LeagueOption('england', 'Premier League', '🇬🇧'),
-  LeagueOption('spain', 'La Liga', '🇪🇸'),
-  LeagueOption('germany', 'Bundesliga', '🇩🇪'),
-  LeagueOption('ucl', 'Champions', '🏆'),
-  LeagueOption('europa', 'Europa', '⭐'),
+  // Latinoamérica
+  LeagueOption('colombia',     'BetPlay',       '🇨🇴'),
+  LeagueOption('argentina',    'Argentina',     '🇦🇷'),
+  LeagueOption('libertadores', 'Libertadores',  '🏆'),
+  // Europa — Top 5
+  LeagueOption('spain',        'La Liga',       '🇪🇸'),
+  LeagueOption('england',      'Premier',       '🇬🇧'),
+  LeagueOption('italy',        'Serie A',       '🇮🇹'),
+  LeagueOption('germany',      'Bundesliga',    '🇩🇪'),
+  LeagueOption('france',       'Ligue 1',       '🇫🇷'),
+  // UEFA
+  LeagueOption('ucl',          'Champions',     '⭐'),
 ];
 
 // ── Repository ────────────────────────────────────────────

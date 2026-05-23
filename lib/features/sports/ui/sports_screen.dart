@@ -182,6 +182,7 @@ class _SportsContent extends StatelessWidget {
                   : detail.league.name,
               style: context.textTheme.bodySmall
                   ?.copyWith(color: AppColors.textTertiary),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -320,6 +321,21 @@ class _StandingsTable extends StatelessWidget {
   const _StandingsTable({required this.standings});
   final List<SimpleStanding> standings;
 
+  /// Group standings by the `group` field (for Libertadores, UCL, etc.).
+  /// Returns a list of [group name, list of standings] pairs.
+  /// If no group info exists, returns a single entry with null key.
+  List<(String?, List<SimpleStanding>)> get _grouped {
+    final hasGroups = standings.any((s) => s.group != null);
+    if (!hasGroups) return [(null, standings)];
+
+    final map = <String, List<SimpleStanding>>{};
+    for (final s in standings) {
+      final key = s.group ?? 'Grupo';
+      (map[key] ??= []).add(s);
+    }
+    return map.entries.map((e) => (e.key, e.value)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final headerStyle = context.textTheme.labelSmall?.copyWith(
@@ -331,54 +347,83 @@ class _StandingsTable extends StatelessWidget {
       fontWeight: FontWeight.bold,
       color: AppColors.primary,
     );
+    final groupHeaderStyle = context.textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: AppColors.secondary,
+      letterSpacing: 0.5,
+    );
+
+    final groups = _grouped;
 
     return Card(
       elevation: AppDimensions.cardElevation,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowHeight: 36,
-          dataRowMinHeight: 36,
-          dataRowMaxHeight: 44,
-          columnSpacing: 10,
-          headingRowColor: WidgetStateProperty.all(
-            Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          columns: [
-            DataColumn(label: Text('#', style: headerStyle)),
-            DataColumn(label: Text('Equipo', style: headerStyle)),
-            DataColumn(label: Text('PJ', style: headerStyle)),
-            DataColumn(label: Text('G', style: headerStyle)),
-            DataColumn(label: Text('E', style: headerStyle)),
-            DataColumn(label: Text('P', style: headerStyle)),
-            DataColumn(label: Text('GF', style: headerStyle)),
-            DataColumn(label: Text('GC', style: headerStyle)),
-            DataColumn(label: Text('DG', style: headerStyle)),
-            DataColumn(label: Text('Pts', style: headerStyle)),
-          ],
-          rows: standings.map((s) {
-            final dg = s.goalsDiff > 0 ? '+${s.goalsDiff}' : '${s.goalsDiff}';
-            return DataRow(
-              cells: [
-                DataCell(Text('${s.rank}', style: cellStyle)),
-                DataCell(
-                  SizedBox(
-                    width: 130,
-                    child: Text(
-                      s.team.name,
-                      style: cellStyle?.copyWith(fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groups.map((entry) {
+            final (groupName, rows) = entry;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Group header (only for group-stage competitions)
+                if (groupName != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppDimensions.md, AppDimensions.sm, AppDimensions.md, 0),
+                    child: Text(groupName.toUpperCase(), style: groupHeaderStyle),
                   ),
+
+                DataTable(
+                  headingRowHeight: 36,
+                  dataRowMinHeight: 36,
+                  dataRowMaxHeight: 44,
+                  columnSpacing: 10,
+                  headingRowColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ),
+                  columns: [
+                    DataColumn(label: Text('#', style: headerStyle)),
+                    DataColumn(label: Text('Equipo', style: headerStyle)),
+                    DataColumn(label: Text('PJ', style: headerStyle)),
+                    DataColumn(label: Text('G', style: headerStyle)),
+                    DataColumn(label: Text('E', style: headerStyle)),
+                    DataColumn(label: Text('P', style: headerStyle)),
+                    DataColumn(label: Text('GF', style: headerStyle)),
+                    DataColumn(label: Text('GC', style: headerStyle)),
+                    DataColumn(label: Text('DG', style: headerStyle)),
+                    DataColumn(label: Text('Pts', style: headerStyle)),
+                  ],
+                  rows: rows.map((s) {
+                    final dg = s.goalsDiff > 0
+                        ? '+${s.goalsDiff}'
+                        : '${s.goalsDiff}';
+                    return DataRow(
+                      cells: [
+                        DataCell(Text('${s.rank}', style: cellStyle)),
+                        DataCell(
+                          SizedBox(
+                            width: 130,
+                            child: Text(
+                              s.team.name,
+                              style: cellStyle?.copyWith(
+                                  fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        DataCell(Text('${s.played}', style: cellStyle)),
+                        DataCell(Text('${s.won}', style: cellStyle)),
+                        DataCell(Text('${s.draw}', style: cellStyle)),
+                        DataCell(Text('${s.lost}', style: cellStyle)),
+                        DataCell(Text('${s.goalsFor}', style: cellStyle)),
+                        DataCell(Text('${s.goalsAgainst}', style: cellStyle)),
+                        DataCell(Text(dg, style: cellStyle)),
+                        DataCell(Text('${s.points}', style: ptsStyle)),
+                      ],
+                    );
+                  }).toList(),
                 ),
-                DataCell(Text('${s.played}', style: cellStyle)),
-                DataCell(Text('${s.won}', style: cellStyle)),
-                DataCell(Text('${s.draw}', style: cellStyle)),
-                DataCell(Text('${s.lost}', style: cellStyle)),
-                DataCell(Text('${s.goalsFor}', style: cellStyle)),
-                DataCell(Text('${s.goalsAgainst}', style: cellStyle)),
-                DataCell(Text(dg, style: cellStyle)),
-                DataCell(Text('${s.points}', style: ptsStyle)),
               ],
             );
           }).toList(),

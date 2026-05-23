@@ -62,7 +62,10 @@ class JobFilterNotifier extends Notifier<JobFilter> {
 }
 
 /// Fetches jobs based on current filters.
-final jobListProvider = FutureProvider<PaginatedJobs>((ref) async {
+///
+/// Uses autoDispose so the provider is destroyed when the Jobs screen
+/// is not visible — next visit always fetches fresh data from the API.
+final jobListProvider = FutureProvider.autoDispose<PaginatedJobs>((ref) async {
   final repo = ref.watch(jobRepositoryProvider);
   final filter = ref.watch(jobFilterProvider);
   return repo.getJobs(

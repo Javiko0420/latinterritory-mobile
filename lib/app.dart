@@ -6,7 +6,7 @@ import 'package:latinterritory/core/theme/app_theme.dart';
 /// Root widget of the application.
 ///
 /// Sets up MaterialApp with:
-/// - GoRouter for declarative routing
+/// - GoRouter for declarative routing (created once, never recreated)
 /// - Light + dark theme from [AppTheme]
 /// - Riverpod for state management (wrapped in main.dart)
 class App extends ConsumerWidget {
@@ -14,7 +14,11 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
+    // Read instead of watch — the router is created once and manages
+    // its own refresh via _RouterRefreshNotifier + refreshListenable.
+    // Watching here would cause MaterialApp.router to rebuild (and
+    // flash blank) on every auth state change.
+    final router = ref.read(routerProvider);
 
     return MaterialApp.router(
       title: 'LatinTerritory',

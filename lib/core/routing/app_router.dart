@@ -18,52 +18,81 @@ import 'package:latinterritory/features/forums/ui/forum_list_screen.dart';
 import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
 import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/profile/ui/profile_screen.dart';
+import 'package:latinterritory/features/profile/ui/edit_profile_screen.dart';
+import 'package:latinterritory/features/profile/ui/change_password_screen.dart';
 import 'package:latinterritory/features/exchange/ui/exchange_screen.dart';
 import 'package:latinterritory/features/sports/ui/sports_screen.dart';
 import 'package:latinterritory/features/weather/ui/weather_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
-/// Global navigator key for accessing navigation outside widget tree.
+/// Global navigator keys — defined once, never recreated.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final shellNavigatorKey = GlobalKey<NavigatorState>();
 
+// ── Router Refresh Notifier ───────────────────────────────
+//
+// Bridges Riverpod auth state → GoRouter redirect refreshes.
+//
+// The GoRouter instance is created ONLY ONCE per app lifetime.
+// This ChangeNotifier fires whenever auth state changes, telling
+// GoRouter to re-run its redirect function — without recreating
+// the router or its GlobalKeys (which caused "Multiple GlobalKey" errors).
+
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    ref.listen<AsyncValue<AuthState>>(
+      authStateProvider,
+      (_, _) => notifyListeners(),
+    );
+  }
+}
+
+// ── Router Provider ───────────────────────────────────────
+
 /// GoRouter configuration provider.
 ///
-/// Redirects unauthenticated users to login.
-/// Uses ShellRoute for bottom navigation tabs.
+/// The router is created **once** and never recreated.
+/// Auth changes are handled via [refreshListenable] + redirect.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final refreshNotifier = _RouterRefreshNotifier(ref);
+  ref.onDispose(refreshNotifier.dispose);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/home',
     debugLogDiagnostics: true,
+    refreshListenable: refreshNotifier,
 
     // ── Auth Redirect Guard ─────────────────────────────
     redirect: (context, state) {
-      // Skip redirect while auth is still resolving (no value yet).
-      // Prevents false logouts from transient AsyncLoading states.
+      // Read (don't watch) — the refreshListenable handles re-runs.
+      final authState = ref.read(authStateProvider);
+
+      // Skip redirect while auth is still resolving.
       if (!authState.hasValue) return null;
 
       final isLoggedIn = authState.value!.isAuthenticated;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
 
-      // Not logged in and trying to access protected route → login.
+      // Not logged in → protect private routes.
       if (!isLoggedIn && !isAuthRoute) {
-        // Allow public routes (home, businesses, jobs, events) without auth.
-        final publicPaths = ['/home', '/businesses', '/jobs', '/events', '/weather', '/exchange', '/sports'];
+        const publicPaths = [
+          '/home',
+          '/businesses',
+          '/jobs',
+          '/events',
+          '/weather',
+          '/exchange',
+          '/sports',
+        ];
         final isPublic = publicPaths.any(
           (p) => state.matchedLocation.startsWith(p),
         );
-        if (!isPublic) {
-          return '/auth/login';
-        }
+        if (!isPublic) return '/auth/login';
       }
 
       // Already logged in and on auth page → home.
-      if (isLoggedIn && isAuthRoute) {
-        return '/home';
-      }
+      if (isLoggedIn && isAuthRoute) return '/home';
 
       return null;
     },
@@ -84,6 +113,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/forgot-password',
         name: RouteNames.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      // ── Profile Sub-routes (full-screen, outside shell) ─
+      GoRoute(
+        path: '/profile/edit',
+        name: RouteNames.editProfile,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/change-password',
+        name: RouteNames.changePassword,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
 
       // ── Detail Routes (full-screen, outside shell) ───

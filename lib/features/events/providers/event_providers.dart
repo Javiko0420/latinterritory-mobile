@@ -59,7 +59,10 @@ class EventFilterNotifier extends Notifier<EventFilter> {
 }
 
 /// Fetches events based on current filters.
-final eventListProvider = FutureProvider<PaginatedEvents>((ref) async {
+///
+/// Uses autoDispose so the provider is destroyed when the Events screen
+/// is not visible — next visit always fetches fresh data from the API.
+final eventListProvider = FutureProvider.autoDispose<PaginatedEvents>((ref) async {
   final repo = ref.watch(eventRepositoryProvider);
   final filter = ref.watch(eventFilterProvider);
   return repo.getEvents(

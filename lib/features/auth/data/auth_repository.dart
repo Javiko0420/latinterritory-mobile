@@ -65,7 +65,12 @@ class AuthRepository {
 
   Future<User> getCurrentUser() async {
     final response = await _dio.get(ApiEndpoints.usersMe);
-    return User.fromJson(response.data);
+    // GET /api/users/me returns {"success":true,"data":{...},"timestamp":"..."}
+    final body = response.data as Map<String, dynamic>;
+    final userJson = body.containsKey('data')
+        ? body['data'] as Map<String, dynamic>
+        : body;
+    return User.fromJson(userJson);
   }
 
   // ── Check Existing Session ─────────────────────────────

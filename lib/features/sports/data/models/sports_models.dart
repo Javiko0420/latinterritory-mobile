@@ -58,6 +58,8 @@ abstract class SimpleStanding with _$SimpleStanding {
     required int goalsFor,
     required int goalsAgainst,
     required int goalsDiff,
+    /// Present for group-stage competitions (Libertadores, UCL, etc.)
+    String? group,
   }) = _SimpleStanding;
 
   factory SimpleStanding.fromJson(Map<String, dynamic> json) =>
@@ -91,7 +93,8 @@ abstract class SportsSummary with _$SportsSummary {
 abstract class LeagueDetail with _$LeagueDetail {
   const factory LeagueDetail({
     required SportTeam league,
-    String? season,
+    /// Season year as integer (e.g. 2026). Nullable for error-tolerant parsing.
+    @JsonKey(fromJson: _toIntOrNull) int? season,
     required List<SimpleFixture> results,
     required List<SimpleStanding> standings,
   }) = _LeagueDetail;
