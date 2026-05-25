@@ -66,10 +66,28 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LatinTerritory needs access to your photo library to upload images for your business or event.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>LatinTerritory needs access to your camera to take photos for your business or event.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LatinTerritory uses your location to show nearby businesses and events.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>api.cloudinary.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+		</dict>
 	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>

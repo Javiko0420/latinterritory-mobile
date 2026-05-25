@@ -57,6 +57,8 @@ class _ProfileBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _PublishSection(),
+              const SizedBox(height: AppDimensions.xl),
               _ProfileMenu(profile: profile),
               const SizedBox(height: AppDimensions.xl),
               _LogoutButton(
@@ -364,6 +366,164 @@ class _AvatarInitial extends StatelessWidget {
           fontSize: radius * 0.7,
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Publish Section ───────────────────────────────────────
+
+class _PublishSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Publicar en la comunidad',
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppDimensions.sm),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+            ),
+          ),
+          child: Column(
+            children: [
+              _PublishTile(
+                icon: Icons.store_outlined,
+                title: 'Publicar Negocio',
+                subtitle: 'Agrega tu negocio a la comunidad',
+                onTap: () => context.pushNamed(RouteNames.createBusiness),
+                isFirst: true,
+              ),
+              Divider(
+                height: 1,
+                indent: 60,
+                endIndent: 16,
+                color: isDark ? AppColors.darkBorder : AppColors.divider,
+              ),
+              _PublishTile(
+                icon: Icons.event_outlined,
+                title: 'Publicar Evento',
+                subtitle: 'Comparte tus eventos con la comunidad',
+                onTap: () => context.pushNamed(RouteNames.createEvent),
+              ),
+              Divider(
+                height: 1,
+                indent: 60,
+                endIndent: 16,
+                color: isDark ? AppColors.darkBorder : AppColors.divider,
+              ),
+              _PublishTile(
+                icon: Icons.work_outline,
+                title: 'Publicar Empleo',
+                subtitle: 'Busca talento latino en tu ciudad',
+                onTap: () => context.pushNamed(RouteNames.createJob),
+                isLast: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PublishTile extends StatelessWidget {
+  const _PublishTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isFirst = false,
+    this.isLast = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isFirst;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final subtitleColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    BorderRadius? borderRadius;
+    if (isFirst) {
+      borderRadius = const BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusLg));
+    } else if (isLast) {
+      borderRadius = const BorderRadius.vertical(
+          bottom: Radius.circular(AppDimensions.radiusLg));
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: borderRadius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: subtitleColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: isDark
+                  ? AppColors.darkTextTertiary
+                  : AppColors.textTertiary,
+            ),
+          ],
         ),
       ),
     );

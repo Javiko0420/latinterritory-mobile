@@ -9,10 +9,13 @@ import 'package:latinterritory/features/auth/ui/forgot_password_screen.dart';
 import 'package:latinterritory/features/home/ui/home_screen.dart';
 import 'package:latinterritory/features/businesses/ui/business_detail_screen.dart';
 import 'package:latinterritory/features/businesses/ui/business_list_screen.dart';
+import 'package:latinterritory/features/businesses/ui/create_business_screen.dart';
 import 'package:latinterritory/features/jobs/ui/job_detail_screen.dart';
 import 'package:latinterritory/features/jobs/ui/job_list_screen.dart';
+import 'package:latinterritory/features/jobs/ui/create_job_screen.dart';
 import 'package:latinterritory/features/events/ui/event_detail_screen.dart';
 import 'package:latinterritory/features/events/ui/event_list_screen.dart';
+import 'package:latinterritory/features/events/ui/create_event_screen.dart';
 import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/ui/forum_list_screen.dart';
 import 'package:latinterritory/features/forums/ui/forum_posts_screen.dart';
@@ -113,6 +116,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/forgot-password',
         name: RouteNames.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      // ── Publish Routes (full-screen, outside shell) ──────
+      GoRoute(
+        path: '/businesses/create',
+        name: RouteNames.createBusiness,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CreateBusinessScreen(),
+      ),
+      GoRoute(
+        path: '/events/create',
+        name: RouteNames.createEvent,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CreateEventScreen(),
+      ),
+      GoRoute(
+        path: '/jobs/create',
+        name: RouteNames.createJob,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CreateJobScreen(),
       ),
 
       // ── Profile Sub-routes (full-screen, outside shell) ─

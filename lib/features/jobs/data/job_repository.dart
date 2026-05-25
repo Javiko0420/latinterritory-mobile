@@ -47,4 +47,9 @@ class JobRepository {
     return JobDetail.fromJson(
         response.data['data'] as Map<String, dynamic>);
   }
+
+  /// Crea una nueva oferta de empleo.
+  Future<void> createJob(Map<String, dynamic> data) async {
+    await _dio.post(ApiEndpoints.jobs, data: data);
+  }
 }

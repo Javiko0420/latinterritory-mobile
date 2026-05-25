@@ -14,11 +14,17 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Read instead of watch — the router is created once and manages
-    // its own refresh via _RouterRefreshNotifier + refreshListenable.
-    // Watching here would cause MaterialApp.router to rebuild (and
-    // flash blank) on every auth state change.
-    final router = ref.read(routerProvider);
+    // IMPORTANTE: usar ref.watch (no ref.read) para que Riverpod mantenga
+    // vivo el routerProvider durante toda la sesión.
+    //
+    // En Riverpod 3.x, los providers se auto-disposan cuando ningún widget
+    // los observa. Con ref.read, el routerProvider se disponía justo después
+    // del primer build(), destruyendo el _RouterRefreshNotifier y cortando
+    // las notificaciones de cambio de auth a GoRouter.
+    //
+    // Como routerProvider devuelve siempre la MISMA instancia de GoRouter
+    // (nunca cambia), este watch NO provoca rebuilds innecesarios de App.
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: 'LatinTerritory',

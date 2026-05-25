@@ -25,6 +25,11 @@ class RouteNames {
   static const String editProfile = 'edit-profile';
   static const String changePassword = 'change-password';
 
+  // ── Publish ─────────────────────────────────────────────
+  static const String createBusiness = 'createBusiness';
+  static const String createEvent = 'createEvent';
+  static const String createJob = 'createJob';
+
   // ── Utilities ───────────────────────────────────────────
   static const String weather = 'weather';
   static const String exchange = 'exchange';

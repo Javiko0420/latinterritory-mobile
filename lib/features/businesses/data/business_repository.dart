@@ -47,4 +47,9 @@ class BusinessRepository {
     return BusinessDetail.fromJson(
         response.data['data'] as Map<String, dynamic>);
   }
+
+  /// Crea un nuevo negocio en el directorio.
+  Future<void> createBusiness(Map<String, dynamic> data) async {
+    await _dio.post(ApiEndpoints.businesses, data: data);
+  }
 }

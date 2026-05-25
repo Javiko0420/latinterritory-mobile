@@ -45,4 +45,9 @@ class EventRepository {
     return EventDetail.fromJson(
         response.data['data'] as Map<String, dynamic>);
   }
+
+  /// Crea un nuevo evento.
+  Future<void> createEvent(Map<String, dynamic> data) async {
+    await _dio.post(ApiEndpoints.events, data: data);
+  }
 }

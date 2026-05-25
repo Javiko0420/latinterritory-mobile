@@ -3,7 +3,6 @@ import 'package:latinterritory/core/constants/api_endpoints.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/storage/secure_storage.dart';
 import 'package:latinterritory/features/auth/data/models/auth_models.dart';
-import 'package:latinterritory/shared/utils/logger.dart';
 
 /// Repository for all authentication operations.
 ///
@@ -26,7 +25,13 @@ class AuthRepository {
       ApiEndpoints.mobileLogin,
       data: request.toJson(),
     );
-    final authResponse = AuthResponse.fromJson(response.data);
+    // Soporta respuesta plana y con envelope {"success":true,"data":{...}}
+    final body = response.data as Map<String, dynamic>;
+    final payload = body.containsKey('data') && body['data'] is Map<String, dynamic>
+        ? body['data'] as Map<String, dynamic>
+        : body;
+
+    final authResponse = AuthResponse.fromJson(payload);
     await _persistSession(authResponse);
     return authResponse;
   }
