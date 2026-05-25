@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
+import 'package:latinterritory/core/i18n/tr.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
@@ -60,20 +62,20 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: const [
-          _HeroBanner(),
-          SizedBox(height: 20),
-          _CategoryChips(),
-          SizedBox(height: 24),
-          _SectionHeader(title: 'Negocios destacados'),
-          SizedBox(height: 12),
-          _BusinessesCarousel(),
-          SizedBox(height: 20),
-          _UtilitiesSection(),
-          SizedBox(height: 20),
-          _SectionHeader(title: 'Próximos eventos'),
-          SizedBox(height: 12),
-          _EventsList(),
+        children: [
+          const _HeroBanner(),
+          const SizedBox(height: 20),
+          const _CategoryChips(),
+          const SizedBox(height: 24),
+          _SectionHeader(titleKey: 'home.featured_businesses'),
+          const SizedBox(height: 12),
+          const _BusinessesCarousel(),
+          const SizedBox(height: 20),
+          const _UtilitiesSection(),
+          const SizedBox(height: 20),
+          _SectionHeader(titleKey: 'home.upcoming_events'),
+          const SizedBox(height: 12),
+          const _EventsList(),
         ],
       ),
     );
@@ -82,12 +84,14 @@ class HomeScreen extends ConsumerWidget {
 
 // ── Hero Banner ───────────────────────────────────────────
 
-class _HeroBanner extends StatelessWidget {
+class _HeroBanner extends ConsumerWidget {
   const _HeroBanner();
 
   @override
-  Widget build(BuildContext context) {
-    final today = DateFormat('EEEE d \'de\' MMMM', 'es').format(DateTime.now());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final today = DateFormat("EEEE d 'de' MMMM", locale.languageCode)
+        .format(DateTime.now());
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
@@ -131,7 +135,7 @@ class _HeroBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Descubre tu comunidad\nlatina en Australia 🌎',
+                    tr(ref, 'home.discover'),
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 22,
                       height: 1.25,
@@ -158,7 +162,7 @@ class _HeroBanner extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        child: const Text('Explorar'),
+                        child: Text(tr(ref, 'home.explore')),
                       ),
                       OutlinedButton(
                         onPressed: () => context.pushNamed(RouteNames.register),
@@ -177,7 +181,7 @@ class _HeroBanner extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        child: const Text('Únete gratis'),
+                        child: Text(tr(ref, 'home.join_free')),
                       ),
                     ],
                   ),
@@ -292,15 +296,15 @@ class _Chip extends StatelessWidget {
 
 // ── Section header ────────────────────────────────────────
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+class _SectionHeader extends ConsumerWidget {
+  const _SectionHeader({required this.titleKey});
 
-  final String title;
+  final String titleKey;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Text(
-      title,
+      tr(ref, titleKey),
       style: GoogleFonts.spaceGrotesk(
         fontSize: 16,
         fontWeight: FontWeight.w700,
@@ -560,17 +564,17 @@ class _EventsList extends StatelessWidget {
 
 // ── Utilities section ─────────────────────────────────────
 
-class _UtilitiesSection extends StatelessWidget {
+class _UtilitiesSection extends ConsumerWidget {
   const _UtilitiesSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Utilidades',
+          tr(ref, 'home.utilities'),
           style: GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.w700,
             fontSize: 16,
@@ -584,21 +588,21 @@ class _UtilitiesSection extends StatelessWidget {
           children: [
             _UtilityButton(
               icon: Icons.wb_sunny,
-              label: 'Clima',
+              label: tr(ref, 'home.weather'),
               color: AppColors.latinSkyBlue,
               onTap: () => context.go('/weather'),
             ),
             const SizedBox(width: 10),
             _UtilityButton(
               icon: Icons.currency_exchange,
-              label: 'Divisas',
+              label: tr(ref, 'home.exchange'),
               color: AppColors.secondary,
               onTap: () => context.go('/exchange'),
             ),
             const SizedBox(width: 10),
             _UtilityButton(
               icon: Icons.sports_soccer,
-              label: 'Deportes',
+              label: tr(ref, 'home.sports'),
               color: AppColors.latinRed,
               onTap: () => context.go('/sports'),
             ),
@@ -609,7 +613,7 @@ class _UtilitiesSection extends StatelessWidget {
           children: [
             _UtilityButton(
               icon: Icons.radio,
-              label: 'Radio',
+              label: tr(ref, 'home.radio'),
               color: AppColors.latinPurple,
               onTap: () => context.go('/radio'),
             ),

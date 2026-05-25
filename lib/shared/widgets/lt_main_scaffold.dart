@@ -1,42 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
+import 'package:latinterritory/core/i18n/tr.dart';
 
 /// Main scaffold that wraps tabbed screens with a floating "pill" bottom nav.
 ///
-/// Used as the ShellRoute builder in [GoRouter]. The body content is padded
-/// at the bottom so the floating nav doesn't cover scrollable content.
-class LtMainScaffold extends StatelessWidget {
+/// ConsumerWidget para que los labels del nav reaccionen al cambio de idioma.
+class LtMainScaffold extends ConsumerWidget {
   const LtMainScaffold({super.key, required this.child});
 
   final Widget child;
 
-  static const _tabs = [
-    _TabItem(icon: Icons.home_outlined,   activeIcon: Icons.home,   label: 'Inicio',     path: '/home'),
-    _TabItem(icon: Icons.store_outlined,  activeIcon: Icons.store,  label: 'Directorio', path: '/businesses'),
-    _TabItem(icon: Icons.work_outline,    activeIcon: Icons.work,   label: 'Empleos',    path: '/jobs'),
-    _TabItem(icon: Icons.event_outlined,  activeIcon: Icons.event,  label: 'Eventos',    path: '/events'),
-    _TabItem(icon: Icons.forum_outlined,  activeIcon: Icons.forum,  label: 'Foros',      path: '/forums'),
-    _TabItem(icon: Icons.person_outline,  activeIcon: Icons.person, label: 'Perfil',     path: '/profile'),
+  static const _tabDefs = [
+    _TabDef(icon: Icons.home_outlined,  activeIcon: Icons.home,   labelKey: 'nav.home',      path: '/home'),
+    _TabDef(icon: Icons.store_outlined, activeIcon: Icons.store,  labelKey: 'nav.directory',  path: '/businesses'),
+    _TabDef(icon: Icons.work_outline,   activeIcon: Icons.work,   labelKey: 'nav.jobs',       path: '/jobs'),
+    _TabDef(icon: Icons.event_outlined, activeIcon: Icons.event,  labelKey: 'nav.events',     path: '/events'),
+    _TabDef(icon: Icons.forum_outlined, activeIcon: Icons.forum,  labelKey: 'nav.forums',     path: '/forums'),
+    _TabDef(icon: Icons.person_outline, activeIcon: Icons.person, labelKey: 'nav.profile',    path: '/profile'),
   ];
 
-  /// Vertical padding reserved at the bottom of the body so the floating
-  /// pill nav doesn't overlap content. Exposed for child screens that
-  /// scroll (so they can subtract this from their own bottom insets).
   static const double bottomNavReservedSpace = 92.0;
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    for (var i = 0; i < _tabs.length; i++) {
-      if (location.startsWith(_tabs[i].path)) return i;
+    for (var i = 0; i < _tabDefs.length; i++) {
+      if (location.startsWith(_tabDefs[i].path)) return i;
     }
     return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = _currentIndex(context);
+
+    // Construye tabs con labels traducidas — se reconstruye al cambiar locale.
+    final tabs = _tabDefs
+        .map((d) => _TabItem(
+              icon: d.icon,
+              activeIcon: d.activeIcon,
+              label: tr(ref, d.labelKey),
+              path: d.path,
+            ))
+        .toList();
 
     return Scaffold(
       extendBody: true,
@@ -53,9 +61,9 @@ class LtMainScaffold extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: _LtFloatingNav(
-                tabs: _tabs,
+                tabs: tabs,
                 currentIndex: currentIndex,
-                onTap: (index) => context.go(_tabs[index].path),
+                onTap: (index) => context.go(tabs[index].path),
               ),
             ),
           ),
@@ -178,6 +186,24 @@ class _NavTab extends StatelessWidget {
   }
 }
 
+// ── Data classes ──────────────────────────────────────────
+
+/// Definición estática del tab (sin label, que es dinámica).
+class _TabDef {
+  const _TabDef({
+    required this.icon,
+    required this.activeIcon,
+    required this.labelKey,
+    required this.path,
+  });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String labelKey;
+  final String path;
+}
+
+/// Tab con label ya traducida, construido en build().
 class _TabItem {
   const _TabItem({
     required this.icon,

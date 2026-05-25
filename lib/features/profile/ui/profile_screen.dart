@@ -79,17 +79,17 @@ class _ProfileBody extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro que quieres cerrar sesión?'),
+        title: Text(trRead(ref, 'profile.logout_title')),
+        content: Text(trRead(ref, 'profile.logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => ctx.pop(false),
-            child: const Text('Cancelar'),
+            child: Text(trRead(ref, 'profile.cancel')),
           ),
           TextButton(
             onPressed: () => ctx.pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Cerrar Sesión'),
+            child: Text(trRead(ref, 'profile.logout')),
           ),
         ],
       ),
@@ -102,13 +102,13 @@ class _ProfileBody extends ConsumerWidget {
 
 // ── Hero Header ───────────────────────────────────────────
 
-class _HeroHeader extends StatelessWidget {
+class _HeroHeader extends ConsumerWidget {
   const _HeroHeader({required this.profile});
 
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -142,7 +142,7 @@ class _HeroHeader extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Perfil',
+                        tr(ref, 'profile.title'),
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -378,16 +378,16 @@ class _AvatarInitial extends StatelessWidget {
 
 // ── Publish Section ───────────────────────────────────────
 
-class _PublishSection extends StatelessWidget {
+class _PublishSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Publicar en la comunidad',
+          tr(ref, 'profile.publish_section'),
           style: GoogleFonts.spaceGrotesk(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -407,8 +407,8 @@ class _PublishSection extends StatelessWidget {
             children: [
               _PublishTile(
                 icon: Icons.store_outlined,
-                title: 'Publicar Negocio',
-                subtitle: 'Agrega tu negocio a la comunidad',
+                title: tr(ref, 'profile.publish_business'),
+                subtitle: tr(ref, 'profile.publish_business_sub'),
                 onTap: () => context.pushNamed(RouteNames.createBusiness),
                 isFirst: true,
               ),
@@ -420,8 +420,8 @@ class _PublishSection extends StatelessWidget {
               ),
               _PublishTile(
                 icon: Icons.event_outlined,
-                title: 'Publicar Evento',
-                subtitle: 'Comparte tus eventos con la comunidad',
+                title: tr(ref, 'profile.publish_event'),
+                subtitle: tr(ref, 'profile.publish_event_sub'),
                 onTap: () => context.pushNamed(RouteNames.createEvent),
               ),
               Divider(
@@ -432,8 +432,8 @@ class _PublishSection extends StatelessWidget {
               ),
               _PublishTile(
                 icon: Icons.work_outline,
-                title: 'Publicar Empleo',
-                subtitle: 'Busca talento latino en tu ciudad',
+                title: tr(ref, 'profile.publish_job'),
+                subtitle: tr(ref, 'profile.publish_job_sub'),
                 onTap: () => context.pushNamed(RouteNames.createJob),
                 isLast: true,
               ),
@@ -536,46 +536,46 @@ class _PublishTile extends StatelessWidget {
 
 // ── Profile Menu ──────────────────────────────────────────
 
-class _ProfileMenu extends StatelessWidget {
+class _ProfileMenu extends ConsumerWidget {
   const _ProfileMenu({required this.profile});
 
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final items = <_MenuEntry>[
       _MenuEntry(
         icon: Icons.edit_outlined,
-        title: 'Editar perfil',
-        subtitle: 'Nombre, foto y datos personales',
+        title: tr(ref, 'profile.edit'),
+        subtitle: tr(ref, 'profile.edit_sub'),
         onTap: () => context.pushNamed(RouteNames.editProfile),
       ),
       if (profile.hasPassword)
         _MenuEntry(
           icon: Icons.lock_outline,
-          title: 'Cambiar contraseña',
-          subtitle: 'Actualiza tu seguridad',
+          title: tr(ref, 'profile.change_password'),
+          subtitle: tr(ref, 'profile.change_password_sub'),
           onTap: () => context.pushNamed(RouteNames.changePassword),
         ),
       _MenuEntry(
         icon: Icons.person_outline,
-        title: 'Rol',
+        title: tr(ref, 'profile.role'),
         subtitle: profile.role,
         onTap: null,
       ),
       if (profile.email.isNotEmpty)
         _MenuEntry(
           icon: Icons.mail_outline,
-          title: 'Email',
+          title: tr(ref, 'profile.email'),
           subtitle: profile.email,
           onTap: null,
         ),
       if (profile.phoneNumber != null)
         _MenuEntry(
           icon: Icons.phone_outlined,
-          title: 'Teléfono',
+          title: tr(ref, 'profile.phone'),
           subtitle: profile.phoneNumber!,
           onTap: null,
         ),
@@ -783,18 +783,18 @@ class _LanguageTile extends ConsumerWidget {
 
 // ── Logout Button ─────────────────────────────────────────
 
-class _LogoutButton extends StatelessWidget {
+class _LogoutButton extends ConsumerWidget {
   const _LogoutButton({required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.logout, color: AppColors.latinRed),
       label: Text(
-        'Cerrar sesión',
+        tr(ref, 'profile.logout'),
         style: GoogleFonts.spaceGrotesk(
           fontWeight: FontWeight.w700,
           color: AppColors.latinRed,
