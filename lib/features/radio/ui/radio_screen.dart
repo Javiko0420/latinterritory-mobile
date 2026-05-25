@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/radio/data/models/radio_models.dart';
+import 'package:latinterritory/features/radio/providers/radio_player_provider.dart';
 import 'package:latinterritory/features/radio/providers/radio_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
@@ -53,11 +54,16 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
     ref.read(radioSearchQueryProvider.notifier).clear();
   }
 
-  Future<void> _playStation(RadioStation station) async {
+  Future<void> _playStation(
+    RadioStation station,
+    List<RadioStation> contextStations,
+  ) async {
     try {
-      ref.read(currentStationProvider.notifier).set(station);
-      ref.read(isPlayingProvider.notifier).set(true);
-      await ref.read(radioPlayerServiceProvider).play(station.streamUrl);
+      await ref.read(radioPlayerProvider.notifier).playApiStation(
+            station,
+            screenSize: MediaQuery.sizeOf(context),
+            contextStations: contextStations,
+          );
     } catch (e) {
       // Log del error real para facilitar debugging
       debugPrint('[Radio] Error al reproducir "${station.name}": $e');
@@ -222,7 +228,7 @@ class _CountryChips extends ConsumerWidget {
 
 class _PopularStations extends ConsumerWidget {
   const _PopularStations({required this.onTap});
-  final Future<void> Function(RadioStation) onTap;
+  final Future<void> Function(RadioStation, List<RadioStation>) onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -252,7 +258,7 @@ class _PopularStations extends ConsumerWidget {
 
 class _SearchResults extends ConsumerWidget {
   const _SearchResults({required this.onTap});
-  final Future<void> Function(RadioStation) onTap;
+  final Future<void> Function(RadioStation, List<RadioStation>) onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -280,7 +286,7 @@ class _SearchResults extends ConsumerWidget {
 class _StationGrid extends ConsumerWidget {
   const _StationGrid({required this.stations, required this.onTap});
   final List<RadioStation> stations;
-  final Future<void> Function(RadioStation) onTap;
+  final Future<void> Function(RadioStation, List<RadioStation>) onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -303,7 +309,7 @@ class _StationGrid extends ConsumerWidget {
           station: station,
           isPlaying: isPlaying,
           isDark: isDark,
-          onTap: () => onTap(station),
+          onTap: () => onTap(station, stations),
         );
       },
     );

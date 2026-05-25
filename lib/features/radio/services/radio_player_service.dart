@@ -47,6 +47,16 @@ class RadioPlayerService {
     await _player.stop();
   }
 
+  /// Pausa la reproducción manteniendo la fuente cargada.
+  Future<void> pause() async {
+    await _player.pause();
+  }
+
+  /// Reanuda la reproducción tras una pausa.
+  Future<void> resume() async {
+    await _player.play();
+  }
+
   /// Libera todos los recursos — llamar solo al cerrar la app.
   Future<void> dispose() async {
     await _player.dispose();

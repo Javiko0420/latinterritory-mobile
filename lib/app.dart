@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latinterritory/core/routing/app_router.dart';
 import 'package:latinterritory/core/theme/app_theme.dart';
+import 'package:latinterritory/features/radio/ui/radio_overlay_wrapper.dart';
 
 /// Root widget of the application.
 ///
@@ -37,6 +38,10 @@ class App extends ConsumerWidget {
 
       // ── Routing ─────────────────────────────────────
       routerConfig: router,
+
+      // ── Global overlay (radio mini player) ──────────
+      builder: (context, child) =>
+          RadioOverlayWrapper(child: child ?? const SizedBox.shrink()),
     );
   }
 }
