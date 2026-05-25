@@ -24,24 +24,22 @@ class RadioPlayerService {
   // ── Operaciones ────────────────────────────────────────
 
   /// Inicia o cambia el stream al [streamUrl] dado.
+  ///
+  /// Throws [PlayerException] si el stream no pudo cargarse.
   Future<void> play(String streamUrl) async {
-    try {
-      await _configureSession();
-      await _player.stop();
-      await _player.setAudioSource(
-        AudioSource.uri(Uri.parse(streamUrl)),
-        preload: false,
-      );
-      await _player.play();
-    } on PlayerException catch (e) {
-      debugPrint('[RadioPlayer] PlayerException: ${e.message}');
-      rethrow;
-    } on PlayerInterruptedException catch (e) {
-      debugPrint('[RadioPlayer] Interrupted: ${e.message}');
-    } catch (e) {
-      debugPrint('[RadioPlayer] Unexpected error: $e');
-      rethrow;
-    }
+    // Bug fix: configurar sesión ANTES de marcar el flag
+    await _configureSession();
+
+    await _player.stop();
+
+    // Bug fix: NO usar preload:false para streams en vivo.
+    // Con preload:false, play() retorna sin conectar y el error
+    // ocurre asíncronamente sin llegar al catch del caller.
+    await _player.setAudioSource(
+      AudioSource.uri(Uri.parse(streamUrl)),
+    );
+
+    await _player.play();
   }
 
   /// Detiene la reproducción sin liberar el servicio.
@@ -58,28 +56,34 @@ class RadioPlayerService {
 
   Future<void> _configureSession() async {
     if (_sessionConfigured) return;
-    _sessionConfigured = true;
 
-    final session = await AudioSession.instance;
-    await session.configure(
-      const AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions:
-            AVAudioSessionCategoryOptions.duckOthers,
-        avAudioSessionMode: AVAudioSessionMode.defaultMode,
-        avAudioSessionRouteSharingPolicy:
-            AVAudioSessionRouteSharingPolicy.defaultPolicy,
-        avAudioSessionSetActiveOptions:
-            AVAudioSessionSetActiveOptions.none,
-        androidAudioAttributes: AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.music,
-          flags: AndroidAudioFlags.none,
-          usage: AndroidAudioUsage.media,
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(
+        const AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playback,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.duckOthers,
+          avAudioSessionMode: AVAudioSessionMode.defaultMode,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions:
+              AVAudioSessionSetActiveOptions.none,
+          androidAudioAttributes: AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.music,
+            flags: AndroidAudioFlags.none,
+            usage: AndroidAudioUsage.media,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+          androidWillPauseWhenDucked: false,
         ),
-        androidAudioFocusGainType:
-            AndroidAudioFocusGainType.gain,
-        androidWillPauseWhenDucked: false,
-      ),
-    );
+      );
+      // Bug fix: marcar como configurado SOLO si no hubo excepción
+      _sessionConfigured = true;
+      debugPrint('[RadioPlayer] AudioSession configurada correctamente.');
+    } catch (e) {
+      // La sesión no se configuró — no marcar flag para reintentar.
+      debugPrint('[RadioPlayer] Error configurando AudioSession: $e');
+    }
   }
 }

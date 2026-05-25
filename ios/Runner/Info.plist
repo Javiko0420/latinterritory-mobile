@@ -74,22 +74,13 @@
 	<string>LatinTerritory uses your location to show nearby businesses and events.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<!-- Permite HTTP a localhost (backend de desarrollo) -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
-		<key>NSAllowsArbitraryLoadsInMedia</key>
+		<!-- Permite HTTP en streams de audio/radio (just_audio usa AVPlayer que requiere esto) -->
+		<!-- NSAllowsArbitraryLoadsInMedia fue deprecado en iOS 10; usar NSAllowsArbitraryLoads -->
+		<key>NSAllowsArbitraryLoads</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>api.cloudinary.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-			</dict>
-		</dict>
 	</dict>
 	<key>UIBackgroundModes</key>
 	<array>

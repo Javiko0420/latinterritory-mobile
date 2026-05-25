@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,11 +59,17 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
       ref.read(isPlayingProvider.notifier).set(true);
       await ref.read(radioPlayerServiceProvider).play(station.streamUrl);
     } catch (e) {
+      // Log del error real para facilitar debugging
+      debugPrint('[Radio] Error al reproducir "${station.name}": $e');
+      debugPrint('[Radio] URL: ${station.streamUrl}');
+
       ref.read(isPlayingProvider.notifier).set(false);
       if (mounted) {
-        context.showErrorSnackBar(
-          'No se pudo conectar a la emisora. Intenta con otra.',
-        );
+        // En debug muestra el error técnico; en release mensaje amigable
+        final msg = kDebugMode
+            ? 'Error: $e'
+            : 'No se pudo conectar a la emisora. Intenta con otra.';
+        context.showErrorSnackBar(msg);
       }
     }
   }
