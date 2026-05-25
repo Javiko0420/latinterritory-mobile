@@ -25,6 +25,7 @@ import 'package:latinterritory/features/profile/ui/edit_profile_screen.dart';
 import 'package:latinterritory/features/profile/ui/change_password_screen.dart';
 import 'package:latinterritory/features/exchange/ui/exchange_screen.dart';
 import 'package:latinterritory/features/sports/ui/sports_screen.dart';
+import 'package:latinterritory/features/radio/ui/radio_screen.dart';
 import 'package:latinterritory/features/weather/ui/weather_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
@@ -87,6 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           '/weather',
           '/exchange',
           '/sports',
+          '/radio',
         ];
         final isPublic = publicPaths.any(
           (p) => state.matchedLocation.startsWith(p),
@@ -262,6 +264,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: RouteNames.sports,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SportsScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/radio',
+            name: RouteNames.radio,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: RadioScreen(),
             ),
           ),
         ],

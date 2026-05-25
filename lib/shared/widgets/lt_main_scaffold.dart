@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
+import 'package:latinterritory/features/radio/ui/widgets/mini_player.dart';
 
 /// Main scaffold that wraps tabbed screens with a floating "pill" bottom nav.
 ///
@@ -24,7 +25,15 @@ class LtMainScaffold extends StatelessWidget {
   /// Vertical padding reserved at the bottom of the body so the floating
   /// pill nav doesn't overlap content. Exposed for child screens that
   /// scroll (so they can subtract this from their own bottom insets).
+  ///
+  /// Aumentado para acomodar el mini player de radio cuando está activo.
   static const double bottomNavReservedSpace = 92.0;
+
+  /// Altura del mini player de radio.
+  static const double miniPlayerHeight = 64.0;
+
+  /// Espacio total reservado cuando el mini player está visible.
+  static const double bottomNavWithMiniPlayer = 164.0;
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -42,10 +51,25 @@ class LtMainScaffold extends StatelessWidget {
       extendBody: true,
       body: Stack(
         children: [
+          // ── Contenido de la pantalla activa ───────────
           Padding(
             padding: const EdgeInsets.only(bottom: bottomNavReservedSpace),
             child: child,
           ),
+
+          // ── Mini player de radio (sobre el nav bar) ───
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 80, // justo encima del nav bar
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: RadioMiniPlayer(),
+            ),
+          ),
+
+          // ── Bottom nav ────────────────────────────────
           Positioned(
             left: 16,
             right: 16,

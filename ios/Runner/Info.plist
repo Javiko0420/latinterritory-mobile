@@ -76,6 +76,8 @@
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<key>NSAllowsArbitraryLoadsInMedia</key>
+		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>api.cloudinary.com</key>
@@ -89,6 +91,10 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

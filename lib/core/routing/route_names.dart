@@ -34,4 +34,5 @@ class RouteNames {
   static const String weather = 'weather';
   static const String exchange = 'exchange';
   static const String sports = 'sports';
+  static const String radio = 'radio';
 }

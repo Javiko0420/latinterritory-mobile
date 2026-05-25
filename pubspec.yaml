@@ -49,6 +49,8 @@ dependencies:
   connectivity_plus: ^7.0.0
   package_info_plus: ^9.0.0
   image_picker: ^1.2.2
+  just_audio: ^0.10.5
+  audio_session: ^0.2.3
 
 dev_dependencies:
   flutter_test:

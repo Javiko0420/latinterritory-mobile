@@ -56,4 +56,8 @@ class ApiEndpoints {
   static const String sportsLeague = '/api/sports/league';
   static const String sportsFixtures = '/api/sports/fixtures';
   static const String sportsSummary = '/api/sports/summary';
+
+  // ── Radio ────────────────────────────────────────────────
+  static const String radioPopular = '/api/radio/popular';
+  static const String radioSearch = '/api/radio/search';
 }

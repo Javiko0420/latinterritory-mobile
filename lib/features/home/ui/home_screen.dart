@@ -604,6 +604,17 @@ class _UtilitiesSection extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _UtilityButton(
+              icon: Icons.radio,
+              label: 'Radio',
+              color: AppColors.latinPurple,
+              onTap: () => context.go('/radio'),
+            ),
+          ],
+        ),
       ],
     );
   }
