@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/core/routing/app_router.dart';
 import 'package:latinterritory/core/theme/app_theme.dart';
 import 'package:latinterritory/features/radio/ui/radio_overlay_wrapper.dart';
 
-/// Root widget of the application.
-///
-/// Sets up MaterialApp with:
-/// - GoRouter for declarative routing (created once, never recreated)
-/// - Light + dark theme from [AppTheme]
-/// - Riverpod for state management (wrapped in main.dart)
+/// Root widget de la aplicación.
 class App extends ConsumerWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // IMPORTANTE: usar ref.watch (no ref.read) para que Riverpod mantenga
-    // vivo el routerProvider durante toda la sesión.
-    //
-    // En Riverpod 3.x, los providers se auto-disposan cuando ningún widget
-    // los observa. Con ref.read, el routerProvider se disponía justo después
-    // del primer build(), destruyendo el _RouterRefreshNotifier y cortando
-    // las notificaciones de cambio de auth a GoRouter.
-    //
-    // Como routerProvider devuelve siempre la MISMA instancia de GoRouter
-    // (nunca cambia), este watch NO provoca rebuilds innecesarios de App.
+    // ref.watch mantiene vivo el routerProvider en Riverpod 3.x.
     final router = ref.watch(routerProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
       title: 'LatinTerritory',
       debugShowCheckedModeBanner: false,
 
-      // ── Theme ───────────────────────────────────────
+      // ── Localización ────────────────────────────────
+      locale: locale,
+      supportedLocales: const [Locale('es'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      // ── Tema ────────────────────────────────────────
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,

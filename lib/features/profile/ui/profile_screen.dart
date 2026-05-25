@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
+import 'package:latinterritory/core/i18n/tr.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/features/profile/data/models/profile_models.dart';
@@ -60,6 +62,8 @@ class _ProfileBody extends ConsumerWidget {
               _PublishSection(),
               const SizedBox(height: AppDimensions.xl),
               _ProfileMenu(profile: profile),
+              const SizedBox(height: AppDimensions.md),
+              const _LanguageTile(),
               const SizedBox(height: AppDimensions.xl),
               _LogoutButton(
                 onPressed: () => _confirmLogout(context, ref),
@@ -684,6 +688,93 @@ class _MenuItem extends StatelessWidget {
                     : AppColors.textTertiary,
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Language Tile ─────────────────────────────────────────
+
+class _LanguageTile extends ConsumerWidget {
+  const _LanguageTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final isEs = locale.languageCode == 'es';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => ref.read(localeProvider.notifier).toggle(),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.language,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr(ref, 'profile.language'),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isEs
+                          ? tr(ref, 'profile.language_sub_es')
+                          : tr(ref, 'profile.language_sub_en'),
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                isEs ? '🇪🇸' : '🇬🇧',
+                style: const TextStyle(fontSize: 22),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right,
+                color:
+                    isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );
