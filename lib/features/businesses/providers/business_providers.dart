@@ -74,6 +74,14 @@ final businessListProvider =
   );
 });
 
+// ── Featured Businesses ───────────────────────────────────
+
+final featuredBusinessesProvider =
+    FutureProvider<List<Business>>((ref) async {
+  final repo = ref.watch(businessRepositoryProvider);
+  return repo.getFeaturedBusinesses();
+});
+
 // ── Business Detail ───────────────────────────────────────
 
 final businessDetailProvider =

@@ -71,6 +71,14 @@ final eventListProvider = FutureProvider.autoDispose<PaginatedEvents>((ref) asyn
   );
 });
 
+// ── Upcoming Events (Home) ────────────────────────────────
+
+final upcomingEventsProvider =
+    FutureProvider.autoDispose<List<Event>>((ref) async {
+  final repo = ref.watch(eventRepositoryProvider);
+  return repo.getUpcomingEvents();
+});
+
 // ── Event Detail ──────────────────────────────────────────
 
 final eventDetailProvider =

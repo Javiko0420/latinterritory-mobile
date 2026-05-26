@@ -20,7 +20,7 @@ class EventRepository {
       queryParameters: {
         'page': page,
         'limit': limit,
-        'category': ?category,
+        if (category != null) 'category': category,
         if (query != null && query.isNotEmpty) 'q': query,
       },
     );
@@ -37,6 +37,32 @@ class EventRepository {
       total: pagination['total'] as int,
       hasMore: pagination['hasMore'] as bool? ?? false,
     );
+  }
+
+  /// Fetches upcoming events for the home section.
+  ///
+  /// Backend resolves slot logic (paid placements + organic fallback).
+  /// Falls back to the first page of upcoming events if the dedicated
+  /// endpoint is not available yet.
+  Future<List<Event>> getUpcomingEvents({int limit = 10}) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.upcomingEvents,
+        queryParameters: {'limit': limit},
+      );
+
+      final data = response.data['data'] as List<dynamic>;
+      return data
+          .map((json) => Event.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 404 || statusCode == 500) {
+        final fallback = await getEvents(page: 1, limit: limit);
+        return fallback.events;
+      }
+      rethrow;
+    }
   }
 
   /// Fetches full event detail by ID.

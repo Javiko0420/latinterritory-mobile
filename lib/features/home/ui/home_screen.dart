@@ -3,12 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/core/i18n/tr.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/auth/providers/auth_provider.dart';
+import 'package:latinterritory/features/businesses/data/business_category_utils.dart';
+import 'package:latinterritory/features/businesses/data/models/business_models.dart';
+import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/events/data/event_category_utils.dart';
+import 'package:latinterritory/features/events/data/models/event_models.dart';
+import 'package:latinterritory/features/events/providers/event_providers.dart';
 import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 
 /// "El Periódico" home — V2 design.
@@ -316,77 +323,138 @@ class _SectionHeader extends ConsumerWidget {
 
 // ── Businesses carousel ───────────────────────────────────
 
-class _BusinessSample {
-  const _BusinessSample({
-    required this.name,
-    required this.flag,
-    required this.category,
-    required this.color,
-  });
-
-  final String name;
-  final String flag;
-  final String category;
-  final Color color;
-}
-
-class _BusinessesCarousel extends StatelessWidget {
+class _BusinessesCarousel extends ConsumerWidget {
   const _BusinessesCarousel();
 
-  static const _items = [
-    _BusinessSample(
-      name: 'La Colombiana',
-      flag: '🇨🇴',
-      category: 'Restaurante',
-      color: AppColors.latinRed,
-    ),
-    _BusinessSample(
-      name: 'Mistura Peruana',
-      flag: '🇵🇪',
-      category: 'Gastronomía',
-      color: AppColors.latinGold,
-    ),
-    _BusinessSample(
-      name: 'Tienda BsAs',
-      flag: '🇦🇷',
-      category: 'Artesanías',
-      color: AppColors.latinSkyBlue,
-    ),
-    _BusinessSample(
-      name: 'Construye Latino',
-      flag: '🇲🇽',
-      category: 'Construcción',
-      color: AppColors.latinGreen,
-    ),
-  ];
+  static const _carouselHeight = 168.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final featuredAsync = ref.watch(featuredBusinessesProvider);
+
+    return featuredAsync.when(
+      loading: () => const SizedBox(
+        height: _carouselHeight,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (error, stackTrace) => _FeaturedMessage(
+        height: _carouselHeight,
+        message: tr(ref, 'home.featured_businesses_error'),
+        actionLabel: tr(ref, 'home.retry'),
+        onAction: () => ref.invalidate(featuredBusinessesProvider),
+      ),
+      data: (businesses) {
+        if (businesses.isEmpty) {
+          return _FeaturedMessage(
+            height: _carouselHeight,
+            message: tr(ref, 'home.featured_businesses_empty'),
+          );
+        }
+
+        return SizedBox(
+          height: _carouselHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: businesses.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              return _FeaturedBusinessCard(business: businesses[index]);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FeaturedMessage extends StatelessWidget {
+  const _FeaturedMessage({
+    required this.height,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final double height;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
-      height: 168,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final item = _items[i];
-          return _BusinessCard(item: item);
-        },
+      height: height,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _BusinessCard extends StatelessWidget {
-  const _BusinessCard({required this.item});
+class _FeaturedBusinessCard extends StatelessWidget {
+  const _FeaturedBusinessCard({required this.business});
 
-  final _BusinessSample item;
+  final Business business;
+
+  String? get _imageUrl {
+    if (business.images.isNotEmpty) return business.images.first;
+    return business.logoUrl;
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final categoryLabel = BusinessCategoryUtils.labelFor(business.category);
+    final categoryIcon = BusinessCategoryUtils.iconFor(business.category);
+    final accentColor =
+        BusinessCategoryUtils.accentColorFor(business.category);
+    final imageUrl = _imageUrl;
+
     return InkWell(
-      onTap: () => context.go('/businesses'),
+      onTap: () {
+        context.pushNamed(
+          RouteNames.businessDetail,
+          pathParameters: {'slug': business.slug},
+        );
+      },
       borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
       child: Container(
         width: 140,
@@ -400,20 +468,31 @@ class _BusinessCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 84,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [item.color, item.color.withValues(alpha: 0.6)],
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppDimensions.radiusLg),
-                ),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppDimensions.radiusLg),
               ),
-              alignment: Alignment.center,
-              child: Text(item.flag, style: const TextStyle(fontSize: 36)),
+              child: SizedBox(
+                height: 84,
+                width: double.infinity,
+                child: imageUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) => _FeaturedImageFallback(
+                          icon: categoryIcon,
+                          color: accentColor,
+                        ),
+                        errorWidget: (_, _, _) => _FeaturedImageFallback(
+                          icon: categoryIcon,
+                          color: accentColor,
+                        ),
+                      )
+                    : _FeaturedImageFallback(
+                        icon: categoryIcon,
+                        color: accentColor,
+                      ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -421,7 +500,7 @@ class _BusinessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.name,
+                    business.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.spaceGrotesk(
@@ -434,7 +513,9 @@ class _BusinessCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    item.category,
+                    categoryLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
                       fontSize: 11,
                       color: isDark
@@ -452,112 +533,185 @@ class _BusinessCard extends StatelessWidget {
   }
 }
 
-// ── Events list ───────────────────────────────────────────
-
-class _EventSample {
-  const _EventSample({
-    required this.title,
-    required this.dateLabel,
+class _FeaturedImageFallback extends StatelessWidget {
+  const _FeaturedImageFallback({
+    required this.icon,
     required this.color,
   });
 
-  final String title;
-  final String dateLabel;
+  final IconData icon;
   final Color color;
-}
-
-class _EventsList extends StatelessWidget {
-  const _EventsList();
-
-  static const _items = [
-    _EventSample(
-      title: 'Noche de Salsa y Cumbia',
-      dateLabel: 'Sáb 28 Jun',
-      color: AppColors.latinPurple,
-    ),
-    _EventSample(
-      title: 'Feria Gastronómica Latina',
-      dateLabel: 'Dom 6 Jul',
-      color: AppColors.primary,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      children: [
-        for (var i = 0; i < _items.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          InkWell(
-            onTap: () => context.go('/events'),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.surface,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusLg),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border,
-                ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withValues(alpha: 0.6)],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        size: 32,
+        color: Colors.white.withValues(alpha: 0.92),
+      ),
+    );
+  }
+}
+
+// ── Events list ───────────────────────────────────────────
+
+class _EventsList extends ConsumerWidget {
+  const _EventsList();
+
+  static const _listMinHeight = 120.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final upcomingAsync = ref.watch(upcomingEventsProvider);
+    final locale = ref.watch(localeProvider).languageCode;
+    final dateFormat = DateFormat('EEE d MMM', locale);
+
+    return upcomingAsync.when(
+      loading: () => const SizedBox(
+        height: _listMinHeight,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (error, stackTrace) => _FeaturedMessage(
+        height: _listMinHeight,
+        message: tr(ref, 'home.upcoming_events_error'),
+        actionLabel: tr(ref, 'home.retry'),
+        onAction: () => ref.invalidate(upcomingEventsProvider),
+      ),
+      data: (events) {
+        if (events.isEmpty) {
+          return _FeaturedMessage(
+            height: _listMinHeight,
+            message: tr(ref, 'home.upcoming_events_empty'),
+          );
+        }
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Column(
+          children: [
+            for (var i = 0; i < events.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _UpcomingEventTile(
+                event: events[i],
+                dateLabel: _formatEventDate(dateFormat, events[i].eventDate),
+                accentColor:
+                    EventCategoryUtils.accentColorFor(events[i].category),
+                isDark: isDark,
               ),
-              child: Row(
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatEventDate(DateFormat dateFormat, DateTime eventDate) {
+    final formatted = dateFormat.format(eventDate);
+    if (formatted.isEmpty) return formatted;
+    return formatted[0].toUpperCase() + formatted.substring(1);
+  }
+}
+
+class _UpcomingEventTile extends StatelessWidget {
+  const _UpcomingEventTile({
+    required this.event,
+    required this.dateLabel,
+    required this.accentColor,
+    required this.isDark,
+  });
+
+  final Event event;
+  final String dateLabel;
+  final Color accentColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        context.pushNamed(
+          RouteNames.eventDetail,
+          pathParameters: {'id': event.id},
+        );
+      },
+      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.celebration,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _items[i].color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.celebration,
-                      color: _items[i].color,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _items[i].title,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _items[i].dateLabel,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    event.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: isDark
-                        ? AppColors.darkTextTertiary
-                        : AppColors.textTertiary,
+                  const SizedBox(height: 2),
+                  Text(
+                    dateLabel,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ],
+            Icon(
+              Icons.chevron_right,
+              color: isDark
+                  ? AppColors.darkTextTertiary
+                  : AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

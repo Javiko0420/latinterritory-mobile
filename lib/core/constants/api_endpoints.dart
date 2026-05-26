@@ -23,6 +23,7 @@ class ApiEndpoints {
 
   // ── Businesses ──────────────────────────────────────────
   static const String businesses = '/api/businesses';
+  static const String featuredBusinesses = '/api/businesses/featured';
   static String businessDetail(String id) => "/api/businesses/$id";
   static String businessBySlug(String slug) => '/api/businesses/slug/$slug';
 
@@ -32,6 +33,7 @@ class ApiEndpoints {
 
   // ── Events ──────────────────────────────────────────────
   static const String events = '/api/events';
+  static const String upcomingEvents = '/api/events/upcoming';
   static String eventDetail(String id) => '/api/events/$id';
 
   // ── Forums ──────────────────────────────────────────────

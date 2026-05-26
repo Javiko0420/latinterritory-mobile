@@ -41,6 +41,31 @@ class BusinessRepository {
     );
   }
 
+  /// Fetches featured businesses for the home carousel.
+  ///
+  /// Backend resolves slot logic (paid placements + organic fallback).
+  /// Falls back to the first page of active businesses if the dedicated
+  /// endpoint is not available yet.
+  Future<List<Business>> getFeaturedBusinesses({int limit = 10}) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.featuredBusinesses,
+        queryParameters: {'limit': limit},
+      );
+
+      final data = response.data['data'] as List<dynamic>;
+      return data
+          .map((json) => Business.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        final fallback = await getBusinesses(page: 1, limit: limit);
+        return fallback.businesses;
+      }
+      rethrow;
+    }
+  }
+
   /// Fetches full business detail by slug.
   Future<BusinessDetail> getBusinessBySlug(String slug) async {
     final response = await _dio.get(ApiEndpoints.businessBySlug(slug));
