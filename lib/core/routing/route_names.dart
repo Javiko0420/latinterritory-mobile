@@ -30,6 +30,12 @@ class RouteNames {
   static const String createEvent = 'createEvent';
   static const String createJob = 'createJob';
 
+  // ── My Publications ──────────────────────────────────────
+  static const String myPublications = 'my-publications';
+  static const String editBusiness = 'edit-business';
+  static const String editEvent = 'edit-event';
+  static const String editJob = 'edit-job';
+
   // ── Utilities ───────────────────────────────────────────
   static const String weather = 'weather';
   static const String exchange = 'exchange';

@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.asset(
-              'assets/images/lt_logo.png',
+              'assets/images/logo.png',
               width: 32,
               height: 32,
               fit: BoxFit.cover,

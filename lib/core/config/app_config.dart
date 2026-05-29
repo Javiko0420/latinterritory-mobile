@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:latinterritory/core/config/env.dart';
 
 /// Centralized application configuration.
 ///
 /// All app-wide settings are accessed through this class.
-/// Environment-specific values come from [Env].
+/// Environment-specific values come from [Env] (production in release builds).
 class AppConfig {
   AppConfig._();
+
+  /// Whether the app is running a release build (production environment).
+  static bool get isProduction => kReleaseMode;
 
   /// Backend base URL (no trailing slash).
   static String get baseUrl => Env.baseUrl;

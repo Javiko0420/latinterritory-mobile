@@ -23,6 +23,10 @@ import 'package:latinterritory/features/forums/ui/post_comments_screen.dart';
 import 'package:latinterritory/features/profile/ui/profile_screen.dart';
 import 'package:latinterritory/features/profile/ui/edit_profile_screen.dart';
 import 'package:latinterritory/features/profile/ui/change_password_screen.dart';
+import 'package:latinterritory/features/profile/ui/my_publications_screen.dart';
+import 'package:latinterritory/features/businesses/ui/edit_business_screen.dart';
+import 'package:latinterritory/features/events/ui/edit_event_screen.dart';
+import 'package:latinterritory/features/jobs/ui/edit_job_screen.dart';
 import 'package:latinterritory/features/exchange/ui/exchange_screen.dart';
 import 'package:latinterritory/features/sports/ui/sports_screen.dart';
 import 'package:latinterritory/features/radio/ui/radio_screen.dart';
@@ -152,6 +156,38 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: RouteNames.changePassword,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: '/profile/my-publications',
+        name: RouteNames.myPublications,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MyPublicationsScreen(),
+      ),
+
+      // ── Edit Routes (full-screen, outside shell) ──────
+      GoRoute(
+        path: '/businesses/edit/:slug',
+        name: RouteNames.editBusiness,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => EditBusinessScreen(
+          businessSlug: state.pathParameters['slug']!,
+        ),
+      ),
+      GoRoute(
+        path: '/events/edit/:id',
+        name: RouteNames.editEvent,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => EditEventScreen(
+          eventId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/jobs/edit/:id',
+        name: RouteNames.editJob,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => EditJobScreen(
+          jobId: state.pathParameters['id']!,
+        ),
       ),
 
       // ── Detail Routes (full-screen, outside shell) ───

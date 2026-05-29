@@ -60,6 +60,8 @@ class _ProfileBody extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _PublishSection(),
+              const SizedBox(height: AppDimensions.md),
+              _MyPublicationsTile(),
               const SizedBox(height: AppDimensions.xl),
               _ProfileMenu(profile: profile),
               const SizedBox(height: AppDimensions.md),
@@ -370,6 +372,85 @@ class _AvatarInitial extends StatelessWidget {
           fontSize: radius * 0.7,
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── My Publications Tile ──────────────────────────────────
+
+class _MyPublicationsTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => context.pushNamed(RouteNames.myPublications),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.inventory_2_outlined,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mis Publicaciones',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ver, editar y eliminar tus negocios, eventos y empleos',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: isDark
+                    ? AppColors.darkTextTertiary
+                    : AppColors.textTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );
