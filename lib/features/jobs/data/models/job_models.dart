@@ -36,6 +36,9 @@ abstract class JobDetail with _$JobDetail {
     String? email,
     String? phone,
     String? externalLink,
+    /// Owner identifier exposed by the backend (field name may vary).
+    /// Used to match web-created jobs to the current user.
+    String? userId,
     @Default(false) bool isVerified,
     required DateTime createdAt,
     required DateTime expiresAt,

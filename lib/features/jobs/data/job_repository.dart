@@ -48,8 +48,32 @@ class JobRepository {
         response.data['data'] as Map<String, dynamic>);
   }
 
-  /// Crea una nueva oferta de empleo.
-  Future<void> createJob(Map<String, dynamic> data) async {
-    await _dio.post(ApiEndpoints.jobs, data: data);
+  /// Fetches job offers created by the authenticated user.
+  Future<List<Job>> getMyJobs() async {
+    final response = await _dio.get(ApiEndpoints.myJobs);
+    final data = response.data['data'] as List<dynamic>;
+    return data
+        .map((json) => Job.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Crea una nueva oferta de empleo. Devuelve el ID asignado.
+  Future<String> createJob(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiEndpoints.jobs, data: data);
+    final responseData = response.data['data'];
+    if (responseData is Map<String, dynamic>) {
+      return responseData['id'] as String? ?? '';
+    }
+    return '';
+  }
+
+  /// Actualiza una oferta de empleo existente.
+  Future<void> updateJob(String id, Map<String, dynamic> data) async {
+    await _dio.put(ApiEndpoints.jobDetail(id), data: data);
+  }
+
+  /// Elimina una oferta de empleo.
+  Future<void> deleteJob(String id) async {
+    await _dio.delete(ApiEndpoints.jobDetail(id));
   }
 }

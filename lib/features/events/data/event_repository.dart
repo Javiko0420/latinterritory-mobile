@@ -72,8 +72,32 @@ class EventRepository {
         response.data['data'] as Map<String, dynamic>);
   }
 
-  /// Crea un nuevo evento.
-  Future<void> createEvent(Map<String, dynamic> data) async {
-    await _dio.post(ApiEndpoints.events, data: data);
+  /// Fetches events created by the authenticated user.
+  Future<List<Event>> getMyEvents() async {
+    final response = await _dio.get(ApiEndpoints.myEvents);
+    final data = response.data['data'] as List<dynamic>;
+    return data
+        .map((json) => Event.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Crea un nuevo evento. Devuelve el ID asignado.
+  Future<String> createEvent(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiEndpoints.events, data: data);
+    final responseData = response.data['data'];
+    if (responseData is Map<String, dynamic>) {
+      return responseData['id'] as String? ?? '';
+    }
+    return '';
+  }
+
+  /// Actualiza un evento existente.
+  Future<void> updateEvent(String id, Map<String, dynamic> data) async {
+    await _dio.put(ApiEndpoints.eventDetail(id), data: data);
+  }
+
+  /// Elimina un evento.
+  Future<void> deleteEvent(String id) async {
+    await _dio.delete(ApiEndpoints.eventDetail(id));
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -10,19 +10,20 @@ import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/services/cloudinary_service.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
-import 'package:latinterritory/features/profile/providers/my_publications_providers.dart' show myEventsProvider;
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
 import 'package:latinterritory/shared/widgets/lt_text_field.dart';
 
-class CreateEventScreen extends ConsumerStatefulWidget {
-  const CreateEventScreen({super.key});
+class EditEventScreen extends ConsumerStatefulWidget {
+  const EditEventScreen({super.key, required this.eventId});
+
+  final String eventId;
 
   @override
-  ConsumerState<CreateEventScreen> createState() => _CreateEventScreenState();
+  ConsumerState<EditEventScreen> createState() => _EditEventScreenState();
 }
 
-class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
+class _EditEventScreenState extends ConsumerState<EditEventScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _titleController = TextEditingController();
@@ -33,9 +34,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   String? _category;
   DateTime? _eventDate;
-  File? _imageFile;
+  String? _existingImageUrl;
+  File? _newImageFile;
+  bool _isLoadingInitial = true;
   bool _isLoading = false;
-  bool _termsAccepted = false;
+  String? _loadError;
 
   static const _categories = [
     'Concierto',
@@ -49,6 +52,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadEvent();
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
@@ -58,24 +67,50 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     super.dispose();
   }
 
+  Future<void> _loadEvent() async {
+    try {
+      final repo = ref.read(eventRepositoryProvider);
+      final detail = await repo.getEventDetail(widget.eventId);
+      if (!mounted) return;
+      setState(() {
+        _titleController.text = detail.title;
+        _descriptionController.text = detail.description;
+        _category = detail.category;
+        _eventDate = detail.eventDate;
+        _locationController.text = detail.location;
+        _existingImageUrl = detail.imageUrl;
+        _ticketLinkController.text = detail.ticketLink ?? '';
+        _ticketPriceController.text =
+            detail.ticketPrice != null ? detail.ticketPrice.toString() : '';
+        _isLoadingInitial = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = resolveApiErrorMessage(e);
+        _isLoadingInitial = false;
+      });
+    }
+  }
+
   Future<void> _selectEventDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now.add(const Duration(days: 1)),
-      firstDate: now,
+      initialDate: _eventDate ?? now.add(const Duration(days: 1)),
+      firstDate: now.subtract(const Duration(days: 365)),
       lastDate: DateTime(now.year + 5),
       helpText: 'Selecciona la fecha del evento',
     );
     if (picked == null) return;
-
     if (!mounted) return;
     final time = await showTimePicker(
       context: context,
-      initialTime: const TimeOfDay(hour: 19, minute: 0),
+      initialTime: _eventDate != null
+          ? TimeOfDay.fromDateTime(_eventDate!)
+          : const TimeOfDay(hour: 19, minute: 0),
       helpText: 'Selecciona la hora del evento',
     );
-
     if (time != null) {
       setState(() {
         _eventDate = DateTime(
@@ -96,7 +131,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       imageQuality: 85,
     );
     if (xfile != null) {
-      setState(() => _imageFile = File(xfile.path));
+      setState(() => _newImageFile = File(xfile.path));
     }
   }
 
@@ -108,25 +143,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       return;
     }
 
-    if (_eventDate!.isBefore(DateTime.now())) {
-      context.showErrorSnackBar('La fecha del evento debe ser futura.');
-      return;
-    }
-
-    if (!_termsAccepted) {
-      context.showErrorSnackBar(
-        'Debes aceptar los términos de publicación de eventos.',
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
-      String? imageUrl;
-      if (_imageFile != null) {
+      String? imageUrl = _existingImageUrl;
+      if (_newImageFile != null) {
         final cloudinary = ref.read(cloudinaryServiceProvider);
-        imageUrl = await cloudinary.uploadImage(_imageFile!);
+        imageUrl = await cloudinary.uploadImage(_newImageFile!);
       }
 
       final priceText = _ticketPriceController.text.trim();
@@ -139,20 +162,18 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         'category': _category,
         'eventDate': _eventDate!.toIso8601String(),
         'location': _locationController.text.trim(),
-        'imageUrl': ?imageUrl,
+        if (imageUrl != null) 'imageUrl': imageUrl,
         if (_ticketLinkController.text.trim().isNotEmpty)
           'ticketLink': _ticketLinkController.text.trim(),
-        'ticketPrice': ?ticketPrice,
+        if (ticketPrice != null) 'ticketPrice': ticketPrice,
       };
 
       final repo = ref.read(eventRepositoryProvider);
-      await repo.createEvent(data);
-
-      ref.invalidate(myEventsProvider);
+      await repo.updateEvent(widget.eventId, data);
 
       if (mounted) {
-        context.showSnackBar('¡Evento publicado exitosamente!');
-        context.pop();
+        context.showSnackBar('¡Evento actualizado exitosamente!');
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -165,17 +186,65 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingInitial) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Editar Evento',
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Editar Evento',
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline,
+                    size: 48, color: AppColors.error),
+                const SizedBox(height: AppDimensions.md),
+                Text(_loadError!, textAlign: TextAlign.center),
+                const SizedBox(height: AppDimensions.lg),
+                LtButton(
+                  label: 'Reintentar',
+                  icon: Icons.refresh,
+                  onPressed: () {
+                    setState(() {
+                      _loadError = null;
+                      _isLoadingInitial = true;
+                    });
+                    _loadEvent();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillColor =
         isDark ? AppColors.darkSurfaceVariant : AppColors.surfaceVariant;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final labelColor =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Publicar Evento',
+          'Editar Evento',
           style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
@@ -189,7 +258,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               children: [
                 const SizedBox(height: AppDimensions.sm),
 
-                // ── Título ───────────────────────────────
                 LtTextField(
                   controller: _titleController,
                   label: 'Título del evento',
@@ -205,11 +273,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Descripción ──────────────────────────
                 LtTextField(
                   controller: _descriptionController,
                   label: 'Descripción',
-                  hint: 'Describe el evento, artistas, programa...',
+                  hint: 'Describe el evento...',
                   maxLines: 4,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
@@ -222,8 +289,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Categoría ────────────────────────────
-                _DropdownField(
+                _EditDropdownField(
                   label: 'Categoría',
                   hint: 'Tipo de evento',
                   value: _category,
@@ -235,7 +301,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Fecha y hora ─────────────────────────
+                // ── Fecha y hora ────────────────────────
                 Text(
                   'Fecha y hora del evento',
                   style: GoogleFonts.spaceGrotesk(
@@ -278,18 +344,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             ),
                           ),
                         ),
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          color: AppColors.textTertiary,
-                          size: AppDimensions.iconSm,
-                        ),
+                        const Icon(Icons.calendar_today_outlined,
+                            color: AppColors.textTertiary,
+                            size: AppDimensions.iconSm),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Lugar ────────────────────────────────
                 LtTextField(
                   controller: _locationController,
                   label: 'Lugar',
@@ -305,7 +368,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Imagen (opcional) ────────────────────
+                // ── Imagen ───────────────────────────────
                 Text(
                   'Imagen del evento (opcional)',
                   style: GoogleFonts.spaceGrotesk(
@@ -316,14 +379,47 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.sm),
 
-                if (_imageFile != null) ...[
+                if (_newImageFile != null) ...[
                   Stack(
                     children: [
                       ClipRRect(
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusMd),
-                        child: Image.file(
-                          _imageFile!,
+                        child: Image.file(_newImageFile!,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _isLoading
+                              ? null
+                              : () =>
+                                  setState(() => _newImageFile = null),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDimensions.sm),
+                ] else if (_existingImageUrl != null) ...[
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusMd),
+                        child: CachedNetworkImage(
+                          imageUrl: _existingImageUrl!,
                           height: 160,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -335,18 +431,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         child: GestureDetector(
                           onTap: _isLoading
                               ? null
-                              : () => setState(() => _imageFile = null),
+                              : () => setState(
+                                  () => _existingImageUrl = null),
                           child: Container(
                             decoration: const BoxDecoration(
                               color: Colors.black54,
                               shape: BoxShape.circle,
                             ),
                             padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            child: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
                           ),
                         ),
                       ),
@@ -355,20 +449,23 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   const SizedBox(height: AppDimensions.sm),
                 ],
 
-                if (_imageFile == null && !_isLoading)
+                if (_newImageFile == null && !_isLoading)
                   OutlinedButton.icon(
                     onPressed: _pickImage,
                     icon: const Icon(Icons.add_photo_alternate_outlined,
                         color: AppColors.primary),
                     label: Text(
-                      'Agregar imagen del evento',
+                      _existingImageUrl == null
+                          ? 'Agregar imagen'
+                          : 'Cambiar imagen',
                       style: GoogleFonts.spaceGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
+                      side:
+                          const BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusMd),
@@ -380,7 +477,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Link de tickets (opcional) ───────────
                 LtTextField(
                   controller: _ticketLinkController,
                   label: 'Enlace de tickets (opcional)',
@@ -391,13 +487,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Precio (opcional) ────────────────────
                 LtTextField(
                   controller: _ticketPriceController,
                   label: 'Precio de entrada AUD (opcional, vacío = gratis)',
                   hint: 'Ej. 25',
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   textInputAction: TextInputAction.done,
                   enabled: !_isLoading,
                   validator: (v) {
@@ -410,37 +505,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: AppDimensions.lg),
-
-                // ── Términos ─────────────────────────────
-                Container(
-                  decoration: BoxDecoration(
-                    color: fillColor,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMd),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: CheckboxListTile(
-                    value: _termsAccepted,
-                    onChanged: _isLoading
-                        ? null
-                        : (v) =>
-                            setState(() => _termsAccepted = v ?? false),
-                    activeColor: AppColors.primary,
-                    title: Text(
-                      'Acepto los términos de publicación de eventos',
-                      style: GoogleFonts.dmSans(fontSize: 13),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.sm),
-                  ),
-                ),
                 const SizedBox(height: AppDimensions.xl),
 
-                // ── Botón enviar ─────────────────────────
                 LtButton(
-                  label: 'PUBLICAR EVENTO',
+                  label: 'GUARDAR CAMBIOS',
                   onPressed: _isLoading ? null : _handleSubmit,
                   isLoading: _isLoading,
                 ),
@@ -454,10 +522,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 }
 
-// ── Widget auxiliar ───────────────────────────────────────
-
-class _DropdownField extends StatelessWidget {
-  const _DropdownField({
+class _EditDropdownField extends StatelessWidget {
+  const _EditDropdownField({
     required this.label,
     required this.hint,
     required this.value,
@@ -497,17 +563,15 @@ class _DropdownField extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.sm),
         DropdownButtonFormField<String>(
-          value: value,
+          value: items.contains(value) ? value : null,
           onChanged: enabled ? onChanged : null,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
             fillColor: fillColor,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 13,
-            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               borderSide: BorderSide.none,

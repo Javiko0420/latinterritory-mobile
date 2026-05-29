@@ -73,8 +73,43 @@ class BusinessRepository {
         response.data['data'] as Map<String, dynamic>);
   }
 
-  /// Crea un nuevo negocio en el directorio.
-  Future<void> createBusiness(Map<String, dynamic> data) async {
-    await _dio.post(ApiEndpoints.businesses, data: data);
+  /// Fetches full business detail by ID.
+  Future<BusinessDetail> getBusinessById(String id) async {
+    final response = await _dio.get(ApiEndpoints.businessDetail(id));
+    return BusinessDetail.fromJson(
+        response.data['data'] as Map<String, dynamic>);
+  }
+
+  /// Fetches businesses created by the authenticated user.
+  Future<List<Business>> getMyBusinesses() async {
+    final response = await _dio.get(ApiEndpoints.myBusinesses);
+    final data = response.data['data'] as List<dynamic>;
+    return data
+        .map((json) => Business.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Crea un nuevo negocio en el directorio. Devuelve el SLUG asignado.
+  ///
+  /// Se usa el slug (no el ID) porque el endpoint estable para obtener
+  /// el detalle es GET /api/businesses/slug/:slug.
+  Future<String> createBusiness(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiEndpoints.businesses, data: data);
+    final responseData = response.data['data'];
+    if (responseData is Map<String, dynamic>) {
+      return responseData['slug'] as String? ?? '';
+    }
+    return '';
+  }
+
+  /// Actualiza un negocio existente.
+  Future<void> updateBusiness(
+      String id, Map<String, dynamic> data) async {
+    await _dio.put(ApiEndpoints.businessDetail(id), data: data);
+  }
+
+  /// Elimina un negocio del directorio.
+  Future<void> deleteBusiness(String id) async {
+    await _dio.delete(ApiEndpoints.businessDetail(id));
   }
 }

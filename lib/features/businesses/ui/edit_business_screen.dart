@@ -1,30 +1,30 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/services/cloudinary_service.dart';
-import 'package:latinterritory/shared/utils/logger.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
-import 'package:latinterritory/features/profile/providers/my_publications_providers.dart' show myBusinessesProvider;
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
 import 'package:latinterritory/shared/widgets/lt_text_field.dart';
 
-class CreateBusinessScreen extends ConsumerStatefulWidget {
-  const CreateBusinessScreen({super.key});
+class EditBusinessScreen extends ConsumerStatefulWidget {
+  const EditBusinessScreen({super.key, required this.businessSlug});
+
+  final String businessSlug;
 
   @override
-  ConsumerState<CreateBusinessScreen> createState() =>
-      _CreateBusinessScreenState();
+  ConsumerState<EditBusinessScreen> createState() =>
+      _EditBusinessScreenState();
 }
 
-class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
+class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -39,11 +39,14 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
   String? _category;
   String? _city;
 
-  final List<File> _selectedImages = [];
-  final List<String> _uploadedUrls = [];
-  bool _isUploadingImages = false;
+  // ID resolved after loading via slug; required for PUT /api/businesses/:id.
+  String? _businessId;
+
+  List<String> _existingImages = [];
+  final List<File> _newImages = [];
+  bool _isLoadingInitial = true;
   bool _isLoading = false;
-  bool _termsAccepted = false;
+  String? _loadError;
 
   static const _categories = [
     'GASTRONOMIA',
@@ -64,6 +67,12 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
   static const _cities = ['Brisbane', 'Sydney', 'Melbourne', 'Gold Coast'];
 
   @override
+  void initState() {
+    super.initState();
+    _loadBusiness();
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
@@ -76,59 +85,68 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
     super.dispose();
   }
 
+  Future<void> _loadBusiness() async {
+    try {
+      final repo = ref.read(businessRepositoryProvider);
+      // Load via slug — the confirmed stable endpoint on the backend.
+      final detail = await repo.getBusinessBySlug(widget.businessSlug);
+      if (!mounted) return;
+      setState(() {
+        _businessId = detail.id; // store ID for the PUT request
+        _nameController.text = detail.name;
+        _descriptionController.text = detail.description;
+        _category = detail.category;
+        _city = detail.city;
+        _addressController.text = detail.address ?? '';
+        _phoneController.text = detail.phone ?? '';
+        _emailController.text = detail.email ?? '';
+        _websiteController.text = detail.website ?? '';
+        _whatsappController.text = detail.whatsapp ?? '';
+        _instagramController.text = detail.instagram ?? '';
+        _existingImages = List<String>.from(detail.images);
+        _isLoadingInitial = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = resolveApiErrorMessage(e);
+        _isLoadingInitial = false;
+      });
+    }
+  }
+
   Future<void> _pickImage() async {
-    if (_selectedImages.length >= 5) return;
+    if (_existingImages.length + _newImages.length >= 5) return;
     final picker = ImagePicker();
     final xfile = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (xfile != null) {
-      setState(() => _selectedImages.add(File(xfile.path)));
+      setState(() => _newImages.add(File(xfile.path)));
     }
-  }
-
-  void _removeImage(int index) {
-    setState(() => _selectedImages.removeAt(index));
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validación: al menos 1 imagen obligatoria.
-    if (_selectedImages.isEmpty) {
-      context.showErrorSnackBar(
-        'Debes agregar al menos 1 foto del negocio.',
-      );
+    if (_existingImages.isEmpty && _newImages.isEmpty) {
+      context.showErrorSnackBar('Debes tener al menos 1 foto del negocio.');
       return;
     }
 
-    if (!_termsAccepted) {
-      context.showErrorSnackBar(
-        'Debes aceptar los términos de publicación de negocios.',
-      );
-      return;
-    }
-
-    setState(() {
-      _isUploadingImages = true;
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Subir imágenes a Cloudinary
-      _uploadedUrls.clear();
-      if (_selectedImages.isNotEmpty) {
+      final uploadedUrls = <String>[];
+      if (_newImages.isNotEmpty) {
         final cloudinary = ref.read(cloudinaryServiceProvider);
-        for (final image in _selectedImages) {
+        for (final image in _newImages) {
           final url = await cloudinary.uploadImage(image);
-          _uploadedUrls.add(url);
+          uploadedUrls.add(url);
         }
       }
 
-      setState(() => _isUploadingImages = false);
-
-      // Construir payload
       final data = <String, dynamic>{
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
@@ -144,49 +162,83 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
           'whatsapp': _whatsappController.text.trim(),
         if (_instagramController.text.trim().isNotEmpty)
           'instagram': _instagramController.text.trim(),
-        'images': _uploadedUrls,
+        'images': [..._existingImages, ...uploadedUrls],
       };
 
       final repo = ref.read(businessRepositoryProvider);
-      await repo.createBusiness(data);
-
-      ref.invalidate(myBusinessesProvider);
+      await repo.updateBusiness(_businessId!, data);
 
       if (mounted) {
-        context.showSnackBar('¡Negocio publicado exitosamente!');
-        context.pop();
-      }
-    } on CloudinaryException catch (e) {
-      AppLogger.error('[Business] Cloudinary upload failed', error: e);
-      if (mounted) {
-        context.showErrorSnackBar('Error al subir imagen: ${e.message}');
+        context.showSnackBar('¡Negocio actualizado exitosamente!');
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
-      AppLogger.error('[Business] createBusiness failed', error: e);
       if (mounted) {
         context.showErrorSnackBar(resolveApiErrorMessage(e));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isUploadingImages = false;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingInitial) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Editar Negocio',
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Editar Negocio',
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline,
+                    size: 48, color: AppColors.error),
+                const SizedBox(height: AppDimensions.md),
+                Text(_loadError!, textAlign: TextAlign.center),
+                const SizedBox(height: AppDimensions.lg),
+                LtButton(
+                  label: 'Reintentar',
+                  icon: Icons.refresh,
+                  onPressed: () {
+                    setState(() {
+                      _loadError = null;
+                      _isLoadingInitial = true;
+                    });
+                    _loadBusiness();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? AppColors.darkSurfaceVariant : AppColors.surfaceVariant;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final totalImages = _existingImages.length + _newImages.length;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Publicar Negocio',
+          'Editar Negocio',
           style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
@@ -200,7 +252,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
               children: [
                 const SizedBox(height: AppDimensions.sm),
 
-                // ── Nombre ───────────────────────────────
                 LtTextField(
                   controller: _nameController,
                   label: 'Nombre del negocio',
@@ -222,11 +273,10 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Descripción ──────────────────────────
                 LtTextField(
                   controller: _descriptionController,
                   label: 'Descripción',
-                  hint: 'Describe tu negocio, servicios y propuesta de valor...',
+                  hint: 'Describe tu negocio...',
                   maxLines: 4,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
@@ -235,18 +285,14 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                       return 'La descripción es obligatoria.';
                     }
                     if (v.trim().length < 10) {
-                      return 'La descripción debe tener al menos 10 caracteres.';
-                    }
-                    if (v.trim().length > 1000) {
-                      return 'La descripción no puede superar 1000 caracteres.';
+                      return 'Mínimo 10 caracteres.';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Categoría ────────────────────────────
-                _DropdownField(
+                _EditDropdownField(
                   label: 'Categoría',
                   hint: 'Selecciona una categoría',
                   value: _category,
@@ -258,29 +304,27 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Ciudad ───────────────────────────────
-                _DropdownField(
+                _EditDropdownField(
                   label: 'Ciudad',
                   hint: 'Selecciona una ciudad',
                   value: _city,
                   items: _cities,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _city = v),
-                  validator: (v) => v == null ? 'Selecciona una ciudad.' : null,
+                  validator: (v) =>
+                      v == null ? 'Selecciona una ciudad.' : null,
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Dirección (opcional) ─────────────────
                 LtTextField(
                   controller: _addressController,
                   label: 'Dirección (opcional)',
-                  hint: 'Ej. 123 Queen St, Brisbane QLD 4000',
+                  hint: 'Ej. 123 Queen St',
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Teléfono ─────────────────────────────
                 LtTextField(
                   controller: _phoneController,
                   label: 'Teléfono',
@@ -297,7 +341,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Email ────────────────────────────────
                 LtTextField(
                   controller: _emailController,
                   label: 'Email de contacto',
@@ -309,7 +352,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Sitio web (opcional) ─────────────────
                 LtTextField(
                   controller: _websiteController,
                   label: 'Sitio web (opcional)',
@@ -320,7 +362,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── WhatsApp (opcional) ──────────────────
                 LtTextField(
                   controller: _whatsappController,
                   label: 'WhatsApp (opcional)',
@@ -331,7 +372,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                // ── Instagram (opcional) ─────────────────
                 LtTextField(
                   controller: _instagramController,
                   label: 'Instagram (opcional)',
@@ -341,7 +381,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.lg),
 
-                // ── Imágenes (obligatorio mín. 1) ─────────
+                // ── Fotos ────────────────────────────────
                 Row(
                   children: [
                     Text(
@@ -356,117 +396,68 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '(mín. 1, máx. 5)',
+                      '($totalImages/5)',
                       style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                      ),
+                          fontSize: 12, color: AppColors.primary),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppDimensions.sm),
 
-                if (_selectedImages.isNotEmpty) ...[
+                if (_existingImages.isNotEmpty || _newImages.isNotEmpty) ...[
                   Wrap(
                     spacing: AppDimensions.sm,
                     runSpacing: AppDimensions.sm,
                     children: [
-                      for (var i = 0; i < _selectedImages.length; i++)
-                        _ImagePreviewTile(
-                          file: _selectedImages[i],
-                          onRemove: _isLoading ? null : () => _removeImage(i),
+                      for (var i = 0; i < _existingImages.length; i++)
+                        _NetworkImageTile(
+                          url: _existingImages[i],
+                          onRemove: _isLoading
+                              ? null
+                              : () => setState(
+                                  () => _existingImages.removeAt(i)),
+                        ),
+                      for (var i = 0; i < _newImages.length; i++)
+                        _LocalImageTile(
+                          file: _newImages[i],
+                          onRemove: _isLoading
+                              ? null
+                              : () =>
+                                  setState(() => _newImages.removeAt(i)),
                         ),
                     ],
                   ),
                   const SizedBox(height: AppDimensions.sm),
                 ],
 
-                if (_isUploadingImages)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: AppDimensions.sm),
-                    child: Row(
-                      children: [
-                        const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: AppDimensions.sm),
-                        Text(
-                          'Subiendo imágenes...',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                if (_selectedImages.length < 5 && !_isLoading)
+                if (totalImages < 5 && !_isLoading)
                   OutlinedButton.icon(
                     onPressed: _pickImage,
                     icon: const Icon(Icons.add_photo_alternate_outlined,
                         color: AppColors.primary),
                     label: Text(
-                      _selectedImages.isEmpty
-                          ? 'Agregar foto (obligatorio)'
-                          : 'Agregar otra foto (${_selectedImages.length}/5)',
+                      'Agregar foto',
                       style: GoogleFonts.spaceGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: _selectedImages.isEmpty
-                            ? AppColors.primary.withValues(alpha: 0.7)
-                            : AppColors.primary,
-                      ),
+                      side:
+                          const BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusMd),
                       ),
-                      minimumSize:
-                          const Size.fromHeight(AppDimensions.buttonHeight),
+                      minimumSize: const Size.fromHeight(
+                          AppDimensions.buttonHeight),
                     ),
                   ),
 
-                const SizedBox(height: AppDimensions.lg),
-
-                // ── Términos ─────────────────────────────
-                Container(
-                  decoration: BoxDecoration(
-                    color: fillColor,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMd),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: CheckboxListTile(
-                    value: _termsAccepted,
-                    onChanged: _isLoading
-                        ? null
-                        : (v) =>
-                            setState(() => _termsAccepted = v ?? false),
-                    activeColor: AppColors.primary,
-                    title: Text(
-                      'Acepto los términos de publicación de negocios',
-                      style: GoogleFonts.dmSans(fontSize: 13),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.sm),
-                  ),
-                ),
                 const SizedBox(height: AppDimensions.xl),
 
-                // ── Botón enviar ─────────────────────────
                 LtButton(
-                  label: 'PUBLICAR NEGOCIO',
+                  label: 'GUARDAR CAMBIOS',
                   onPressed: _isLoading ? null : _handleSubmit,
                   isLoading: _isLoading,
                 ),
@@ -480,10 +471,98 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
   }
 }
 
-// ── Widget auxiliares ─────────────────────────────────────
+// ── Helpers de imagen ─────────────────────────────────────
 
-class _DropdownField extends StatelessWidget {
-  const _DropdownField({
+class _NetworkImageTile extends StatelessWidget {
+  const _NetworkImageTile({required this.url, required this.onRemove});
+
+  final String url;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            placeholder: (_, _) => Container(
+              width: 90,
+              height: 90,
+              color: AppColors.border,
+            ),
+            errorWidget: (_, _, _) => Container(
+              width: 90,
+              height: 90,
+              color: AppColors.border,
+              child: const Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(2),
+              child:
+                  const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LocalImageTile extends StatelessWidget {
+  const _LocalImageTile({required this.file, required this.onRemove});
+
+  final File file;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: Image.file(file, width: 90, height: 90, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(2),
+              child:
+                  const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Dropdown controlado ───────────────────────────────────
+
+class _EditDropdownField extends StatelessWidget {
+  const _EditDropdownField({
     required this.label,
     required this.hint,
     required this.value,
@@ -523,7 +602,7 @@ class _DropdownField extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.sm),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          value: items.contains(value) ? value : null,
           onChanged: enabled ? onChanged : null,
           validator: validator,
           decoration: InputDecoration(
@@ -544,51 +623,13 @@ class _DropdownField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
           items: items
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ImagePreviewTile extends StatelessWidget {
-  const _ImagePreviewTile({required this.file, required this.onRemove});
-
-  final File file;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          child: Image.file(
-            file,
-            width: 90,
-            height: 90,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(2),
-              child: const Icon(Icons.close, color: Colors.white, size: 14),
-            ),
-          ),
         ),
       ],
     );

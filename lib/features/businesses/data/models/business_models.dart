@@ -22,6 +22,7 @@ abstract class Business with _$Business {
     @Default([]) List<String> images,
     @Default(false) bool isVerified,
     String? logoUrl,
+    DateTime? createdAt,
   }) = _Business;
 
   factory Business.fromJson(Map<String, dynamic> json) =>
