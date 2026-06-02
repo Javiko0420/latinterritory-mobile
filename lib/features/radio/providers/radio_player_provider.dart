@@ -125,7 +125,13 @@ class RadioPlayerNotifier extends Notifier<RadioPlayerState> {
       apiStations: contextStations,
     );
     ref.read(currentStationProvider.notifier).set(station);
-    await _playUrl(playlist[index].streamUrl);
+
+    await _playUrl(
+      playlist[index].streamUrl,
+      title: station.name,
+      artist: station.country,
+      artUri: station.logoUrl != null ? Uri.tryParse(station.logoUrl!) : null,
+    );
   }
 
   void minimize() => state = state.copyWith(mode: RadioPlayerMode.minimized);
@@ -160,11 +166,28 @@ class RadioPlayerNotifier extends Notifier<RadioPlayerState> {
     await _playCurrent();
   }
 
-  Future<void> _playCurrent() => _playUrl(state.currentStation.streamUrl);
+  Future<void> _playCurrent() {
+    final s = state.currentStation;
+    return _playUrl(
+      s.streamUrl,
+      title: s.name,
+      artist: '${s.country} · ${s.genre}',
+    );
+  }
 
-  Future<void> _playUrl(String streamUrl) async {
+  Future<void> _playUrl(
+    String streamUrl, {
+    String? title,
+    String? artist,
+    Uri? artUri,
+  }) async {
     try {
-      await _player.play(streamUrl);
+      await _player.play(
+        streamUrl,
+        title: title ?? 'Latin Territory Radio',
+        artist: artist,
+        artUri: artUri,
+      );
       state = state.copyWith(isPlaying: true);
       ref.read(isPlayingProvider.notifier).set(true);
     } catch (e) {

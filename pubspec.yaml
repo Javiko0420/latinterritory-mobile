@@ -39,6 +39,9 @@ dependencies:
   slang: ^4.12.1
   slang_flutter: ^4.12.1
 
+  # Background Audio
+  just_audio_background: ^0.0.1-beta.13
+
   # UI
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0

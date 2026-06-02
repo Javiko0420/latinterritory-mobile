@@ -1,11 +1,12 @@
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 /// Singleton que gestiona la reproducción de streams de radio.
 ///
 /// Persiste entre pantallas — el audio continúa aunque el usuario
-/// navegue a otras secciones de la app.
+/// navegue a otras secciones de la app o bloquee el teléfono.
 class RadioPlayerService {
   RadioPlayerService._();
   static final RadioPlayerService instance = RadioPlayerService._();
@@ -25,18 +26,30 @@ class RadioPlayerService {
 
   /// Inicia o cambia el stream al [streamUrl] dado.
   ///
-  /// Throws [PlayerException] si el stream no pudo cargarse.
-  Future<void> play(String streamUrl) async {
-    // Bug fix: configurar sesión ANTES de marcar el flag
+  /// [title], [artist] y [artUri] se usan en la notificación de
+  /// pantalla de bloqueo y en el centro de medios del sistema.
+  Future<void> play(
+    String streamUrl, {
+    String title = 'Latin Territory Radio',
+    String? artist,
+    Uri? artUri,
+  }) async {
     await _configureSession();
 
     await _player.stop();
 
-    // Bug fix: NO usar preload:false para streams en vivo.
-    // Con preload:false, play() retorna sin conectar y el error
-    // ocurre asíncronamente sin llegar al catch del caller.
     await _player.setAudioSource(
-      AudioSource.uri(Uri.parse(streamUrl)),
+      AudioSource.uri(
+        Uri.parse(streamUrl),
+        tag: MediaItem(
+          id: streamUrl,
+          title: title,
+          artist: artist,
+          artUri: artUri,
+          displayTitle: title,
+          displaySubtitle: artist,
+        ),
+      ),
     );
 
     await _player.play();
@@ -72,11 +85,10 @@ class RadioPlayerService {
       await session.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.duckOthers,
+          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
           avAudioSessionMode: AVAudioSessionMode.defaultMode,
           avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+              AVAudioSessionRouteSharingPolicy.longFormAudio,
           avAudioSessionSetActiveOptions:
               AVAudioSessionSetActiveOptions.none,
           androidAudioAttributes: AndroidAudioAttributes(
@@ -88,11 +100,9 @@ class RadioPlayerService {
           androidWillPauseWhenDucked: false,
         ),
       );
-      // Bug fix: marcar como configurado SOLO si no hubo excepción
       _sessionConfigured = true;
       debugPrint('[RadioPlayer] AudioSession configurada correctamente.');
     } catch (e) {
-      // La sesión no se configuró — no marcar flag para reintentar.
       debugPrint('[RadioPlayer] Error configurando AudioSession: $e');
     }
   }
