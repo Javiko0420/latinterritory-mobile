@@ -44,26 +44,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           password: _passwordController.text,
         );
 
-    if (mounted) {
-      final authState = ref.read(authStateProvider);
-      if (authState.hasError) {
-        context.showErrorSnackBar(
-          resolveApiErrorMessage(authState.error),
-        );
-      }
+    if (!mounted) return;
+
+    final authState = ref.read(authStateProvider);
+    if (authState.hasError) {
+      context.showErrorSnackBar(
+        resolveApiErrorMessage(authState.error),
+      );
+    } else if (authState.hasValue && authState.value!.isAuthenticated) {
+      context.go('/home');
     }
   }
 
   Future<void> _handleGoogleSignIn() async {
     await ref.read(authStateProvider.notifier).signInWithGoogle();
 
-    if (mounted) {
-      final authState = ref.read(authStateProvider);
-      if (authState.hasError) {
-        context.showErrorSnackBar(
-          resolveApiErrorMessage(authState.error),
-        );
-      }
+    if (!mounted) return;
+
+    final authState = ref.read(authStateProvider);
+    if (authState.hasError) {
+      context.showErrorSnackBar(
+        resolveApiErrorMessage(authState.error),
+      );
+    } else if (authState.hasValue && authState.value!.isAuthenticated) {
+      context.go('/home');
     }
   }
 
