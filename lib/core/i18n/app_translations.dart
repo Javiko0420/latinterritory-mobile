@@ -179,6 +179,16 @@ class AppTranslations {
       'profile.confirm_new_password': 'Confirmar nueva contraseña',
       'profile.password_changed': 'Contraseña actualizada.',
       'profile.profile_updated': 'Perfil actualizado.',
+      'profile.danger_zone': 'Zona de peligro',
+      'profile.delete_account': 'Eliminar cuenta',
+      'profile.delete_account_sub':
+          'Elimina permanentemente tu cuenta y todos tus datos',
+      'profile.delete_account_title': 'Eliminar cuenta',
+      'profile.delete_account_warning':
+          'Esta acción es permanente y no se puede deshacer. Se eliminarán todos tus datos, publicaciones y actividad.',
+      'profile.delete_account_confirm_check':
+          'Entiendo que esta acción es permanente',
+      'profile.delete_account_confirm_btn': 'Eliminar mi cuenta',
       // ── Weather ────────────────────────────────────────
       'weather.title': 'Clima',
       'weather.next_24h': 'Próximas 24 Horas',
@@ -398,6 +408,16 @@ class AppTranslations {
       'profile.confirm_new_password': 'Confirm new password',
       'profile.password_changed': 'Password updated.',
       'profile.profile_updated': 'Profile updated.',
+      'profile.danger_zone': 'Danger zone',
+      'profile.delete_account': 'Delete account',
+      'profile.delete_account_sub':
+          'Permanently delete your account and all your data',
+      'profile.delete_account_title': 'Delete account',
+      'profile.delete_account_warning':
+          'This action is permanent and cannot be undone. All your data, publications, and activity will be deleted.',
+      'profile.delete_account_confirm_check':
+          'I understand this action is permanent',
+      'profile.delete_account_confirm_btn': 'Delete my account',
       // ── Weather ────────────────────────────────────────
       'weather.title': 'Weather',
       'weather.next_24h': 'Next 24 Hours',

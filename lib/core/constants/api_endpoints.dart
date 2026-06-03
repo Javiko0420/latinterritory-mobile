@@ -9,6 +9,7 @@ class ApiEndpoints {
   static const String mobileLogin = '/api/auth/mobile/login';
   static const String mobileRefresh = '/api/auth/mobile/refresh';
   static const String mobileGoogle = '/api/auth/mobile/google';
+  static const String mobileApple = '/api/auth/mobile/apple';
 
   // ── Auth (Shared with web) ──────────────────────────────
   static const String register = '/api/auth/register';
@@ -19,6 +20,7 @@ class ApiEndpoints {
   static const String usersMe = '/api/users/me';
   static const String completeProfile = '/api/users/me/complete-profile';
   static const String changePassword = '/api/users/me/change-password';
+  static const String deleteAccount = '/api/users/me/delete';
   // Nickname update uses PATCH /api/users/me with { "nickname": "..." }
 
   // ── Businesses ──────────────────────────────────────────

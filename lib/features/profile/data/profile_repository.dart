@@ -5,9 +5,10 @@ import 'package:latinterritory/features/profile/data/models/profile_models.dart'
 /// Repository for user profile operations.
 ///
 /// Communicates with:
-/// - GET  /api/users/me            → [getProfile]
-/// - PUT  /api/users/me            → [updateProfile]
-/// - POST /api/users/me/change-password → [changePassword]
+/// - GET    /api/users/me                  → [getProfile]
+/// - PUT    /api/users/me                  → [updateProfile]
+/// - POST   /api/users/me/change-password  → [changePassword]
+/// - DELETE /api/users/me/delete           → [deleteAccount]
 class ProfileRepository {
   ProfileRepository({required Dio dio}) : _dio = dio;
 
@@ -61,5 +62,12 @@ class ProfileRepository {
         'confirmPassword': confirmPassword,
       },
     );
+  }
+
+  // ── Delete Account ───────────────────────────────────────
+
+  /// Permanently deletes the authenticated user's account.
+  Future<void> deleteAccount() async {
+    await _dio.delete(ApiEndpoints.deleteAccount);
   }
 }

@@ -70,6 +70,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
 
 // ── Change Password ───────────────────────────────────────
 
+
 class ChangePasswordState {
   const ChangePasswordState({this.isLoading = false, this.error});
 
@@ -112,6 +113,52 @@ class ChangePasswordNotifier extends Notifier<ChangePasswordState> {
       return true;
     } catch (e) {
       state = ChangePasswordState(error: resolveApiErrorMessage(e));
+      return false;
+    }
+  }
+
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+}
+
+// ── Delete Account ────────────────────────────────────────
+
+class DeleteAccountState {
+  const DeleteAccountState({this.isLoading = false, this.error});
+
+  final bool isLoading;
+  final String? error;
+
+  DeleteAccountState copyWith({bool? isLoading, String? error}) {
+    return DeleteAccountState(
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+final deleteAccountNotifierProvider =
+    NotifierProvider<DeleteAccountNotifier, DeleteAccountState>(
+  DeleteAccountNotifier.new,
+);
+
+class DeleteAccountNotifier extends Notifier<DeleteAccountState> {
+  @override
+  DeleteAccountState build() => const DeleteAccountState();
+
+  /// Calls DELETE /api/users/me/delete, then logs the user out on success.
+  ///
+  /// Returns [true] on success — GoRouter redirect handles navigation.
+  Future<bool> deleteAccount() async {
+    state = const DeleteAccountState(isLoading: true);
+    try {
+      await ref.read(profileRepositoryProvider).deleteAccount();
+      await ref.read(authStateProvider.notifier).logout();
+      state = const DeleteAccountState();
+      return true;
+    } catch (e) {
+      state = DeleteAccountState(error: resolveApiErrorMessage(e));
       return false;
     }
   }

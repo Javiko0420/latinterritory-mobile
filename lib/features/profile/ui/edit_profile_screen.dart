@@ -5,6 +5,7 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/profile/data/models/profile_models.dart';
 import 'package:latinterritory/features/profile/providers/profile_providers.dart';
+import 'package:latinterritory/features/profile/ui/delete_account_dialog.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
@@ -244,6 +245,43 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
                 label: 'Guardar Cambios',
                 onPressed: _handleSave,
                 isLoading: isLoading,
+              ),
+
+              const SizedBox(height: AppDimensions.xl),
+              const Divider(),
+              const SizedBox(height: AppDimensions.md),
+
+              // ── Delete Account ────────────────────────
+              TextButton.icon(
+                onPressed: isLoading
+                    ? null
+                    : () => showDialog<void>(
+                          context: context,
+                          builder: (_) => const DeleteAccountDialog(),
+                        ),
+                icon: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: AppColors.error,
+                ),
+                label: const Text(
+                  'Eliminar cuenta',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.error.withValues(alpha: 0.08),
+                  side: BorderSide(
+                    color: AppColors.error.withValues(alpha: 0.25),
+                  ),
+                  minimumSize:
+                      const Size.fromHeight(AppDimensions.buttonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusMd),
+                  ),
+                ),
               ),
               const SizedBox(height: AppDimensions.md),
             ],
