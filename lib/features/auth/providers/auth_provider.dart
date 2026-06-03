@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:latinterritory/core/config/app_config.dart';
 import 'package:latinterritory/core/networking/api_client.dart';
 import 'package:latinterritory/core/storage/secure_storage.dart';
@@ -105,6 +106,41 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       final repo = ref.read(authRepositoryProvider);
       final response = await repo.googleSignIn(idToken);
+      return AuthState(user: response.user);
+    });
+  }
+
+  /// Apple Sign-In flow.
+  Future<void> signInWithApple() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final AuthorizationCredentialAppleID credential;
+      try {
+        credential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
+      } on SignInWithAppleAuthorizationException catch (e) {
+        if (e.code == AuthorizationErrorCode.canceled) {
+          return state.value ?? const AuthState();
+        }
+        rethrow;
+      }
+
+      final identityToken = credential.identityToken;
+      if (identityToken == null) {
+        throw Exception('Failed to get Apple identity token.');
+      }
+
+      final repo = ref.read(authRepositoryProvider);
+      final response = await repo.appleSignIn(
+        identityToken: identityToken,
+        firstName: credential.givenName,
+        lastName: credential.familyName,
+        email: credential.email,
+      );
       return AuthState(user: response.user);
     });
   }

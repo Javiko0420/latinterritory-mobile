@@ -57,6 +57,32 @@ class AuthRepository {
     return authResponse;
   }
 
+  // ── Apple Sign-In ───────────────────────────────────────
+
+  Future<AuthResponse> appleSignIn({
+    required String identityToken,
+    String? firstName,
+    String? lastName,
+    String? email,
+  }) async {
+    final response = await _dio.post(
+      ApiEndpoints.mobileApple,
+      data: {
+        'identityToken': identityToken,
+        'user': {
+          'name': {
+            'firstName': firstName,
+            'lastName': lastName,
+          },
+          'email': email,
+        },
+      },
+    );
+    final authResponse = AuthResponse.fromJson(response.data);
+    await _persistSession(authResponse);
+    return authResponse;
+  }
+
   // ── Forgot Password ────────────────────────────────────
 
   Future<void> forgotPassword(String email) async {

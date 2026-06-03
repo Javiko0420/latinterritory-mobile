@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
@@ -58,6 +60,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     await ref.read(authStateProvider.notifier).signInWithGoogle();
+
+    if (!mounted) return;
+
+    final authState = ref.read(authStateProvider);
+    if (authState.hasError) {
+      context.showErrorSnackBar(
+        resolveApiErrorMessage(authState.error),
+      );
+    } else if (authState.hasValue && authState.value!.isAuthenticated) {
+      context.go('/home');
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    await ref.read(authStateProvider.notifier).signInWithApple();
 
     if (!mounted) return;
 
@@ -228,6 +245,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
 
                   const SizedBox(height: 16),
+
+                  // ── Apple (iOS only) ────────────────────
+                  if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                    SignInWithAppleButton(
+                      onPressed:
+                          isLoading ? () {} : _handleAppleSignIn,
+                      style: isDark
+                          ? SignInWithAppleButtonStyle.white
+                          : SignInWithAppleButtonStyle.black,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // ── Google ─────────────────────────────
                   LtButton(

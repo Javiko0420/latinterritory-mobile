@@ -39,6 +39,8 @@ build/
 **/android/key.properties
 *.jks
 *.keystore
+android/app/upload-keystore.jks
+android/key.properties
 
 # iOS
 **/ios/**/*.mode1v3
