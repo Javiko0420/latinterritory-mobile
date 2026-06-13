@@ -96,6 +96,31 @@ class Validators {
     return null;
   }
 
+  /// Normalizes a user-entered URL: if it lacks a scheme, prepends `https://`.
+  ///
+  /// The backend validates `website` with `z.string().url()`, which rejects
+  /// inputs like `www.minegocio.com` (no protocol). Normalizing here lets users
+  /// type the bare domain without the publish failing.
+  static String normalizeUrl(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return '';
+    final hasScheme =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    return hasScheme ? trimmed : 'https://$trimmed';
+  }
+
+  /// Optional website validator: empty is valid; otherwise it must resolve to a
+  /// URL with a dotted host after normalization.
+  static String? optionalWebsite(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    final uri = Uri.tryParse(normalizeUrl(trimmed));
+    if (uri == null || uri.host.isEmpty || !uri.host.contains('.')) {
+      return 'Ingresa una URL válida (ej. https://minegocio.com).';
+    }
+    return null;
+  }
+
   static final _nicknameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
 
   static String? nickname(String? value) {

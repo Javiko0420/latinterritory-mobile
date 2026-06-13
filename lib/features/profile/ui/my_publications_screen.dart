@@ -10,6 +10,9 @@ import 'package:latinterritory/features/businesses/data/models/business_models.d
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
 import 'package:latinterritory/features/events/data/models/event_models.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/features/jobs/data/models/job_models.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
 import 'package:latinterritory/features/profile/providers/my_publications_providers.dart';
@@ -318,7 +321,7 @@ class _JobsTab extends ConsumerWidget {
   }
 }
 
-class _JobCard extends StatelessWidget {
+class _JobCard extends ConsumerWidget {
   const _JobCard({
     required this.job,
     required this.onEdit,
@@ -330,12 +333,19 @@ class _JobCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(jobCategoriesProvider).when(
+          data: (cats) => resolveCategory(job.category, cats)
+              .label(CategoryVertical.job, locale),
+          loading: () => job.category,
+          error: (_, __) => job.category,
+        );
     return _PublicationCard(
       icon: Icons.work_outline,
       iconColor: AppColors.latinSkyBlue,
       title: job.title,
-      subtitle: '${job.category} · ${job.location}',
+      subtitle: '$categoryLabel · ${job.location}',
       dateLabel: DateFormat("d MMM yyyy", 'es').format(job.createdAt),
       onEdit: onEdit,
       onDelete: onDelete,

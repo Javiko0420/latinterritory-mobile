@@ -60,13 +60,72 @@ class ErrorInterceptor extends Interceptor {
     };
   }
 
-  /// Tries to extract `message` or `error` field from response body.
+  /// Extracts a user-friendly message from the backend error body.
+  ///
+  /// Handles every shape the API returns without ever throwing:
+  /// - `{ "error": "text" }`
+  /// - `{ "message": "text" }`
+  /// - `{ "error": { "message": "text" } }`
+  /// - `{ "error": [ { path, message }, ... ] }`  ← Zod `error.issues`
+  /// - `{ "error": "text", "details": [ { field, message } ] }`
+  /// - a bare `[ { path, message } ]` list
+  ///
+  /// Uses type checks instead of casts, so a non-string `error` (e.g. the raw
+  /// Zod issues array) never crashes the interceptor and masks the real cause
+  /// behind a generic "Network error".
   String? _extractMessage(dynamic data) {
     if (data == null) return null;
-    if (data is Map<String, dynamic>) {
-      return data['message'] as String? ?? data['error'] as String?;
+    if (data is String) return data.isNotEmpty ? data : null;
+    if (data is List) return _messagesFromIssues(data);
+    if (data is! Map) return null;
+
+    // Base message: prefer `message`, then `error` (string or nested object).
+    String? base;
+    final rawMessage = data['message'];
+    if (rawMessage is String && rawMessage.isNotEmpty) {
+      base = rawMessage;
     }
-    if (data is String && data.isNotEmpty) return data;
-    return null;
+    final rawError = data['error'];
+    if (base == null) {
+      if (rawError is String && rawError.isNotEmpty) {
+        base = rawError;
+      } else if (rawError is Map && rawError['message'] is String) {
+        base = rawError['message'] as String;
+      }
+    }
+
+    // Validation issues can arrive under `error` (this API) or `details`.
+    final issues = rawError is List ? rawError : data['details'];
+    if (issues is List) {
+      final detailText = _messagesFromIssues(issues);
+      if (detailText != null) {
+        return base != null ? '$base: $detailText' : detailText;
+      }
+    }
+
+    return base;
+  }
+
+  /// Joins up to two validation issue messages, prefixing the field name when
+  /// it can be derived from `path` (Zod) or `field`.
+  String? _messagesFromIssues(List<dynamic> issues) {
+    final messages = <String>[];
+    for (final issue in issues) {
+      if (issue is! Map) continue;
+      final msg = issue['message'];
+      if (msg is! String || msg.isEmpty) continue;
+
+      String? field;
+      final path = issue['path'];
+      if (path is List && path.isNotEmpty) {
+        field = path.last?.toString();
+      } else if (issue['field'] is String) {
+        field = issue['field'] as String;
+      }
+
+      messages.add(field != null && field.isNotEmpty ? '$field: $msg' : msg);
+    }
+    if (messages.isEmpty) return null;
+    return messages.take(2).join(' · ');
   }
 }
