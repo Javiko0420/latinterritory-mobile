@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -13,6 +15,9 @@ class RadioPlayerService {
 
   final AudioPlayer _player = AudioPlayer();
   bool _sessionConfigured = false;
+
+  StreamSubscription<AudioInterruptionEvent>? _interruptionSubscription;
+  StreamSubscription<void>? _becomingNoisySubscription;
 
   // ── Estado reactivo ────────────────────────────────────
 
@@ -72,6 +77,8 @@ class RadioPlayerService {
 
   /// Libera todos los recursos — llamar solo al cerrar la app.
   Future<void> dispose() async {
+    await _interruptionSubscription?.cancel();
+    await _becomingNoisySubscription?.cancel();
     await _player.dispose();
   }
 
@@ -100,6 +107,29 @@ class RadioPlayerService {
           androidWillPauseWhenDucked: false,
         ),
       );
+
+      _interruptionSubscription =
+          session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          if (event.type == AudioInterruptionType.pause ||
+              event.type == AudioInterruptionType.duck) {
+            _player.pause();
+            debugPrint('[RadioPlayer] Interrupción iniciada (${event.type}) — pausando.');
+          }
+        } else {
+          if (event.type == AudioInterruptionType.pause) {
+            _player.play();
+            debugPrint('[RadioPlayer] Interrupción terminada — reanudando.');
+          }
+        }
+      });
+
+      _becomingNoisySubscription =
+          session.becomingNoisyEventStream.listen((_) {
+        _player.pause();
+        debugPrint('[RadioPlayer] Becoming noisy (audífonos desconectados) — pausando.');
+      });
+
       _sessionConfigured = true;
       debugPrint('[RadioPlayer] AudioSession configurada correctamente.');
     } catch (e) {
