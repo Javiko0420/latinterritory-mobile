@@ -19,6 +19,38 @@ class RadioPlayerService {
   StreamSubscription<AudioInterruptionEvent>? _interruptionSubscription;
   StreamSubscription<void>? _becomingNoisySubscription;
 
+  // ── Inicialización de background audio (lazy, one-shot) ────────────────
+  //
+  // JustAudioBackground.init() reemplaza JustAudioPlatform.instance con
+  // _JustAudioBackgroundPlugin y luego inicia _audioHandler via
+  // AudioService.init() (async). Si setAudioSource() se llama ANTES de que
+  // AudioService.init() complete, el constructor _JustAudioPlayer accede a
+  // _audioHandler (campo late) que no fue asignado → LateInitializationError.
+  // Peor aún: _playerId queda seteado pero _platformValue sigue siendo
+  // _IdleAudioPlayer, así que stop() no llama disposePlayer() y _playerId
+  // nunca se resetea → próximo init() lanza "single player instance".
+  //
+  // Solución: inicializar aquí, bloqueante, ANTES de cualquier
+  // setAudioSource(). Cuando play() se invoca el Activity ya está en
+  // foreground, así que AudioService.init() se conecta sin problema.
+
+  static Future<void>? _bgInitFuture;
+
+  static Future<void> _ensureBackgroundInit() {
+    return _bgInitFuture ??= _doBackgroundInit();
+  }
+
+  static Future<void> _doBackgroundInit() async {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.latinterritory.radio.channel',
+      androidNotificationChannelName: 'Latin Territory Radio',
+      androidNotificationIcon: 'mipmap/ic_launcher',
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    );
+    debugPrint('[RadioPlayer] JustAudioBackground inicializado.');
+  }
+
   // ── Estado reactivo ────────────────────────────────────
 
   /// Stream del estado de reproducción (true = reproduciendo).
@@ -40,6 +72,11 @@ class RadioPlayerService {
     Uri? artUri,
   }) async {
     await _configureSession();
+
+    // Bloquear hasta que _audioHandler esté listo. Cuando el usuario
+    // interactúa el Activity está en foreground, así que este await
+    // completa en < 200 ms en el primer llamado.
+    await _ensureBackgroundInit();
 
     await _player.stop();
 
