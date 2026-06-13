@@ -9,7 +9,9 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/services/cloudinary_service.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
+import 'package:latinterritory/shared/widgets/category_dropdown.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
 import 'package:latinterritory/shared/widgets/lt_text_field.dart';
@@ -39,17 +41,6 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
   bool _isLoadingInitial = true;
   bool _isLoading = false;
   String? _loadError;
-
-  static const _categories = [
-    'Concierto',
-    'Teatro',
-    'Comedia',
-    'Fiesta',
-    'Deportes',
-    'Cultural',
-    'Networking',
-    'Otro',
-  ];
 
   @override
   void initState() {
@@ -289,11 +280,11 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                _EditDropdownField(
+                CategoryDropdown(
+                  vertical: CategoryVertical.event,
                   label: 'Categoría',
                   hint: 'Tipo de evento',
                   value: _category,
-                  items: _categories,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) =>
@@ -522,75 +513,3 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
   }
 }
 
-class _EditDropdownField extends StatelessWidget {
-  const _EditDropdownField({
-    required this.label,
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    required this.validator,
-    this.enabled = true,
-  });
-
-  final String label;
-  final String hint;
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-  final String? Function(String?) validator;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final labelColor =
-        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final fillColor =
-        isDark ? AppColors.darkSurfaceVariant : AppColors.surfaceVariant;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: labelColor,
-          ),
-        ),
-        const SizedBox(height: AppDimensions.sm),
-        DropdownButtonFormField<String>(
-          value: items.contains(value) ? value : null,
-          onChanged: enabled ? onChanged : null,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: fillColor,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
-            ),
-          ),
-          items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-        ),
-      ],
-    );
-  }
-}

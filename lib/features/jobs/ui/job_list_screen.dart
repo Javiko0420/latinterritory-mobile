@@ -6,8 +6,10 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/features/jobs/data/models/job_models.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/category_filter_chips.dart';
 
 class JobListScreen extends ConsumerStatefulWidget {
   const JobListScreen({super.key});
@@ -19,17 +21,6 @@ class JobListScreen extends ConsumerStatefulWidget {
 class _JobListScreenState extends ConsumerState<JobListScreen> {
   final _searchController = TextEditingController();
 
-  static const _categories = [
-    'Construcción',
-    'Gastronomía',
-    'Limpieza',
-    'Transporte',
-    'Tecnología',
-    'Salud',
-    'Educación',
-    'Otro',
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -39,13 +30,6 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
   void _onSearch(String value) {
     ref.read(jobFilterProvider.notifier).setQuery(
           value.isEmpty ? null : value,
-        );
-  }
-
-  void _onCategoryTap(String? category) {
-    final current = ref.read(jobFilterProvider).category;
-    ref.read(jobFilterProvider.notifier).setCategory(
-          current == category ? null : category,
         );
   }
 
@@ -110,44 +94,11 @@ class _JobListScreenState extends ConsumerState<JobListScreen> {
           ),
 
           // ── Category Chips ──────────────────────────
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
-                vertical: AppDimensions.sm,
-              ),
-              itemCount: _categories.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppDimensions.xs),
-              itemBuilder: (context, index) {
-                final cat = _categories[index];
-                final isSelected = currentFilter.category == cat;
-                return FilterChip(
-                  label: Text(
-                    cat,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  selected: isSelected,
-                  onSelected: (_) => _onCategoryTap(cat),
-                  selectedColor: AppColors.primary,
-                  showCheckmark: false,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                );
-              },
-            ),
+          CategoryFilterChips(
+            vertical: CategoryVertical.job,
+            selectedValue: currentFilter.category,
+            onChanged: (value) =>
+                ref.read(jobFilterProvider.notifier).setCategory(value),
           ),
 
           // ── Job List ────────────────────────────────

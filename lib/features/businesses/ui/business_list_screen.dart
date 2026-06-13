@@ -4,10 +4,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
+import 'package:latinterritory/features/businesses/data/business_category_utils.dart';
 import 'package:latinterritory/features/businesses/data/models/business_models.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/category_filter_chips.dart';
 
 class BusinessListScreen extends ConsumerStatefulWidget {
   const BusinessListScreen({super.key});
@@ -19,47 +24,6 @@ class BusinessListScreen extends ConsumerStatefulWidget {
 
 class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
   final _searchController = TextEditingController();
-
-  static const _categories = [
-    'GASTRONOMIA',
-    'TECNOLOGIA',
-    'ARTESANIAS',
-    'SERVICIOS',
-    'MODA',
-    'SALUD',
-    'EDUCACION',
-    'TURISMO',
-    'ENTRETENIMIENTO',
-    'OTROS',
-  ];
-
-  /// Etiquetas en español para mostrar en la UI.
-  static const _categoryLabels = {
-    'GASTRONOMIA':    'Gastronomía',
-    'TECNOLOGIA':     'Tecnología',
-    'ARTESANIAS':     'Artesanías',
-    'SERVICIOS':      'Servicios',
-    'MODA':           'Moda',
-    'SALUD':          'Salud',
-    'EDUCACION':      'Educación',
-    'TURISMO':        'Turismo',
-    'ENTRETENIMIENTO':'Entretenimiento',
-    'OTROS':          'Otros',
-  };
-
-  /// Ícono representativo de cada categoría para el placeholder.
-  static const _categoryIcons = {
-    'GASTRONOMIA':    Icons.restaurant,
-    'TECNOLOGIA':     Icons.computer,
-    'ARTESANIAS':     Icons.handyman,
-    'SERVICIOS':      Icons.build,
-    'MODA':           Icons.checkroom,
-    'SALUD':          Icons.health_and_safety,
-    'EDUCACION':      Icons.school,
-    'TURISMO':        Icons.travel_explore,
-    'ENTRETENIMIENTO':Icons.theater_comedy,
-    'OTROS':          Icons.store,
-  };
 
   @override
   void dispose() {
@@ -73,17 +37,6 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
       query: value,
       clearQuery: value.isEmpty,
     );
-  }
-
-  void _onCategoryTap(String? category) {
-    final filter = ref.read(businessFilterProvider);
-    if (filter.category == category) {
-      ref.read(businessFilterProvider.notifier).state =
-          filter.copyWith(clearCategory: true);
-    } else {
-      ref.read(businessFilterProvider.notifier).state =
-          filter.copyWith(category: category);
-    }
   }
 
   @override
@@ -147,44 +100,15 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
           ),
 
           // ── Chips de categoría ──────────────────────
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
-                vertical: AppDimensions.sm,
-              ),
-              itemCount: _categories.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppDimensions.xs),
-              itemBuilder: (context, index) {
-                final cat = _categories[index];
-                final isSelected = currentFilter.category == cat;
-                return FilterChip(
-                  label: Text(
-                    _categoryLabels[cat] ?? cat,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  selected: isSelected,
-                  onSelected: (_) => _onCategoryTap(cat),
-                  selectedColor: AppColors.primary,
-                  showCheckmark: false,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                );
-              },
-            ),
+          CategoryFilterChips(
+            vertical: CategoryVertical.business,
+            selectedValue: currentFilter.category,
+            onChanged: (value) {
+              final filter = ref.read(businessFilterProvider);
+              ref.read(businessFilterProvider.notifier).state = value == null
+                  ? filter.copyWith(clearCategory: true)
+                  : filter.copyWith(category: value);
+            },
           ),
 
           // ── Lista de negocios ───────────────────────
@@ -252,9 +176,8 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                     itemBuilder: (context, index) {
                       return _BusinessCard(
                         business: paginated.businesses[index],
-                        categoryIcon:
-                            _categoryIcons[paginated.businesses[index].category]
-                            ?? Icons.store,
+                        categoryIcon: BusinessCategoryUtils.iconFor(
+                            paginated.businesses[index].category),
                       );
                     },
                   ),
@@ -270,13 +193,20 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
 
 // ── Business Card ─────────────────────────────────────────
 
-class _BusinessCard extends StatelessWidget {
+class _BusinessCard extends ConsumerWidget {
   const _BusinessCard({required this.business, required this.categoryIcon});
   final Business business;
   final IconData categoryIcon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(businessCategoriesProvider).when(
+      data: (cats) => resolveCategory(business.category, cats)
+          .label(CategoryVertical.business, locale),
+      loading: () => business.category,
+      error: (_, _) => business.category,
+    );
     final hasImage = business.images.isNotEmpty;
 
     return Card(
@@ -310,7 +240,6 @@ class _BusinessCard extends StatelessWidget {
                 ),
               )
             else
-              // Placeholder con ícono de categoría cuando no hay imagen
               _CategoryPlaceholder(icon: categoryIcon, height: 120),
 
             Padding(
@@ -332,7 +261,7 @@ class _BusinessCard extends StatelessWidget {
                               AppDimensions.radiusFull),
                         ),
                         child: Text(
-                          business.category,
+                          categoryLabel,
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall

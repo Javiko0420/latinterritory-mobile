@@ -51,6 +51,9 @@ class ApiEndpoints {
   static String commentLike(String id) => '/api/comments/$id/like';
   static String commentReport(String id) => '/api/comments/$id/report';
 
+  // ── Categories ──────────────────────────────────────────
+  static const String categories = '/api/categories';
+
   // ── Utilities ───────────────────────────────────────────
   static const String weather = '/api/weather';
   static const String exchangeRates = '/api/tasas';

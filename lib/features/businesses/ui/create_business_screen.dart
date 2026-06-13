@@ -10,6 +10,8 @@ import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/services/cloudinary_service.dart';
 import 'package:latinterritory/shared/utils/logger.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/shared/widgets/category_dropdown.dart';
 import 'package:latinterritory/features/profile/providers/my_publications_providers.dart' show myBusinessesProvider;
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
@@ -44,22 +46,6 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
   bool _isUploadingImages = false;
   bool _isLoading = false;
   bool _termsAccepted = false;
-
-  static const _categories = [
-    'GASTRONOMIA',
-    'TECNOLOGIA',
-    'ARTESANIAS',
-    'SERVICIOS',
-    'MODA',
-    'AGRICULTURA',
-    'TURISMO',
-    'SALUD',
-    'EDUCACION',
-    'CONSTRUCCION',
-    'TRANSPORTE',
-    'ENTRETENIMIENTO',
-    'OTROS',
-  ];
 
   static const _cities = ['Brisbane', 'Sydney', 'Melbourne', 'Gold Coast'];
 
@@ -139,7 +125,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         if (_websiteController.text.trim().isNotEmpty)
-          'website': _websiteController.text.trim(),
+          'website': Validators.normalizeUrl(_websiteController.text),
         if (_whatsappController.text.trim().isNotEmpty)
           'whatsapp': _whatsappController.text.trim(),
         if (_instagramController.text.trim().isNotEmpty)
@@ -246,11 +232,11 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                 const SizedBox(height: AppDimensions.md),
 
                 // ── Categoría ────────────────────────────
-                _DropdownField(
+                CategoryDropdown(
+                  vertical: CategoryVertical.business,
                   label: 'Categoría',
                   hint: 'Selecciona una categoría',
                   value: _category,
-                  items: _categories,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) =>
@@ -317,6 +303,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
+                  validator: Validators.optionalWebsite,
                 ),
                 const SizedBox(height: AppDimensions.md),
 

@@ -9,6 +9,8 @@ import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
 import 'package:latinterritory/core/services/cloudinary_service.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/shared/widgets/category_dropdown.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
@@ -47,22 +49,6 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
   bool _isLoadingInitial = true;
   bool _isLoading = false;
   String? _loadError;
-
-  static const _categories = [
-    'GASTRONOMIA',
-    'TECNOLOGIA',
-    'ARTESANIAS',
-    'SERVICIOS',
-    'MODA',
-    'AGRICULTURA',
-    'TURISMO',
-    'SALUD',
-    'EDUCACION',
-    'CONSTRUCCION',
-    'TRANSPORTE',
-    'ENTRETENIMIENTO',
-    'OTROS',
-  ];
 
   static const _cities = ['Brisbane', 'Sydney', 'Melbourne', 'Gold Coast'];
 
@@ -157,7 +143,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         if (_websiteController.text.trim().isNotEmpty)
-          'website': _websiteController.text.trim(),
+          'website': Validators.normalizeUrl(_websiteController.text),
         if (_whatsappController.text.trim().isNotEmpty)
           'whatsapp': _whatsappController.text.trim(),
         if (_instagramController.text.trim().isNotEmpty)
@@ -292,11 +278,11 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                _EditDropdownField(
+                CategoryDropdown(
+                  vertical: CategoryVertical.business,
                   label: 'Categoría',
                   hint: 'Selecciona una categoría',
                   value: _category,
-                  items: _categories,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) =>
@@ -359,6 +345,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
                   enabled: !_isLoading,
+                  validator: Validators.optionalWebsite,
                 ),
                 const SizedBox(height: AppDimensions.md),
 

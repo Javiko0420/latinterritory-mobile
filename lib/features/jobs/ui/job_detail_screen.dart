@@ -5,6 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/jobs/data/models/job_models.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
@@ -42,7 +45,7 @@ class JobDetailScreen extends ConsumerWidget {
   }
 }
 
-class _JobDetailBody extends StatelessWidget {
+class _JobDetailBody extends ConsumerWidget {
   const _JobDetailBody({required this.job});
   final JobDetail job;
 
@@ -54,7 +57,14 @@ class _JobDetailBody extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(jobCategoriesProvider).when(
+          data: (cats) => resolveCategory(job.category, cats)
+              .label(CategoryVertical.job, locale),
+          loading: () => job.category,
+          error: (_, __) => job.category,
+        );
     final postedDate = DateFormat('MMMM d, yyyy').format(job.createdAt);
     final expiresDate = DateFormat('MMMM d, yyyy').format(job.expiresAt);
 
@@ -108,7 +118,7 @@ class _JobDetailBody extends StatelessWidget {
                     Chip(
                       avatar:
                           const Icon(Icons.category, size: 14),
-                      label: Text(job.category,
+                      label: Text(categoryLabel,
                           style: const TextStyle(fontSize: 12)),
                       visualDensity: VisualDensity.compact,
                     ),

@@ -13,6 +13,8 @@ import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/features/businesses/data/business_category_utils.dart';
 import 'package:latinterritory/features/businesses/data/models/business_models.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/events/data/event_category_utils.dart';
 import 'package:latinterritory/features/events/data/models/event_models.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
@@ -429,7 +431,7 @@ class _FeaturedMessage extends StatelessWidget {
   }
 }
 
-class _FeaturedBusinessCard extends StatelessWidget {
+class _FeaturedBusinessCard extends ConsumerWidget {
   const _FeaturedBusinessCard({required this.business});
 
   final Business business;
@@ -440,9 +442,15 @@ class _FeaturedBusinessCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final categoryLabel = BusinessCategoryUtils.labelFor(business.category);
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(businessCategoriesProvider).when(
+      data: (cats) => resolveCategory(business.category, cats)
+          .label(CategoryVertical.business, locale),
+      loading: () => business.category,
+      error: (_, __) => business.category,
+    );
     final categoryIcon = BusinessCategoryUtils.iconFor(business.category);
     final accentColor =
         BusinessCategoryUtils.accentColorFor(business.category);

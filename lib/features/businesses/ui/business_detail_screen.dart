@@ -6,6 +6,9 @@ import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/features/businesses/data/models/business_models.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 
 class BusinessDetailScreen extends ConsumerWidget {
@@ -42,7 +45,7 @@ class BusinessDetailScreen extends ConsumerWidget {
   }
 }
 
-class _BusinessDetailBody extends StatelessWidget {
+class _BusinessDetailBody extends ConsumerWidget {
   const _BusinessDetailBody({required this.business});
   final BusinessDetail business;
 
@@ -54,7 +57,14 @@ class _BusinessDetailBody extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(businessCategoriesProvider).when(
+          data: (cats) => resolveCategory(business.category, cats)
+              .label(CategoryVertical.business, locale),
+          loading: () => business.category,
+          error: (_, __) => business.category,
+        );
     return CustomScrollView(
       slivers: [
         // ── Hero Image ──────────────────────────────
@@ -104,7 +114,7 @@ class _BusinessDetailBody extends StatelessWidget {
                   runSpacing: AppDimensions.xs,
                   children: [
                     Chip(
-                      label: Text(business.category,
+                      label: Text(categoryLabel,
                           style: const TextStyle(fontSize: 12)),
                       visualDensity: VisualDensity.compact,
                     ),

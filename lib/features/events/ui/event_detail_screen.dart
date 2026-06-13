@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/features/categories/application/category_providers.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
 import 'package:latinterritory/features/events/data/models/event_models.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
@@ -43,7 +46,7 @@ class EventDetailScreen extends ConsumerWidget {
   }
 }
 
-class _EventDetailBody extends StatelessWidget {
+class _EventDetailBody extends ConsumerWidget {
   const _EventDetailBody({required this.event});
   final EventDetail event;
 
@@ -55,7 +58,14 @@ class _EventDetailBody extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final categoryLabel = ref.watch(eventCategoriesProvider).when(
+          data: (cats) => resolveCategory(event.category, cats)
+              .label(CategoryVertical.event, locale),
+          loading: () => event.category,
+          error: (_, __) => event.category,
+        );
     final dateFormat = DateFormat("EEEE d 'de' MMMM, yyyy", 'en');
     final timeFormat = DateFormat('h:mm a');
     final isFree = event.ticketPrice == null || event.ticketPrice == 0;
@@ -203,7 +213,7 @@ class _EventDetailBody extends StatelessWidget {
                   children: [
                     Chip(
                       avatar: const Icon(Icons.category, size: 14),
-                      label: Text(event.category,
+                      label: Text(categoryLabel,
                           style: const TextStyle(fontSize: 12)),
                       visualDensity: VisualDensity.compact,
                     ),

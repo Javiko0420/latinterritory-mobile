@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
+import 'package:latinterritory/shared/widgets/category_dropdown.dart';
 import 'package:latinterritory/features/profile/providers/my_publications_providers.dart' show myJobsProvider;
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
@@ -37,13 +39,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   bool _termsAccepted = false;
   bool _noPaymentConfirmed = false;
   bool _minWageConfirmed = false;
-
-  static const _categories = [
-    'Pastelería',
-    'Construcción',
-    'Ventas',
-    'Marketing',
-  ];
 
   static const _locations = [
     'Brisbane',
@@ -182,11 +177,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 const SizedBox(height: AppDimensions.md),
 
                 // ── Categoría ────────────────────────────
-                _DropdownField(
+                CategoryDropdown(
+                  vertical: CategoryVertical.job,
                   label: 'Categoría',
                   hint: 'Área de trabajo',
                   value: _category,
-                  items: _categories,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) =>

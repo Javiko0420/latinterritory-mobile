@@ -1,22 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 
-/// Shared category labels, icons and accent colors for business UI.
 class BusinessCategoryUtils {
   BusinessCategoryUtils._();
-
-  static const labels = {
-    'GASTRONOMIA': 'Gastronomía',
-    'TECNOLOGIA': 'Tecnología',
-    'ARTESANIAS': 'Artesanías',
-    'SERVICIOS': 'Servicios',
-    'MODA': 'Moda',
-    'SALUD': 'Salud',
-    'EDUCACION': 'Educación',
-    'TURISMO': 'Turismo',
-    'ENTRETENIMIENTO': 'Entretenimiento',
-    'OTROS': 'Otros',
-  };
 
   static const icons = {
     'GASTRONOMIA': Icons.restaurant,
@@ -24,9 +10,12 @@ class BusinessCategoryUtils {
     'ARTESANIAS': Icons.handyman,
     'SERVICIOS': Icons.build,
     'MODA': Icons.checkroom,
+    'AGRICULTURA': Icons.agriculture,
+    'TURISMO': Icons.travel_explore,
     'SALUD': Icons.health_and_safety,
     'EDUCACION': Icons.school,
-    'TURISMO': Icons.travel_explore,
+    'CONSTRUCCION': Icons.construction,
+    'TRANSPORTE': Icons.local_shipping,
     'ENTRETENIMIENTO': Icons.theater_comedy,
     'OTROS': Icons.store,
   };
@@ -37,29 +26,40 @@ class BusinessCategoryUtils {
     'ARTESANIAS': AppColors.latinGold,
     'SERVICIOS': AppColors.secondary,
     'MODA': AppColors.latinPurple,
+    'AGRICULTURA': AppColors.latinGreen,
+    'TURISMO': AppColors.latinSkyBlue,
     'SALUD': AppColors.latinGreen,
     'EDUCACION': AppColors.primary,
-    'TURISMO': AppColors.latinSkyBlue,
+    'CONSTRUCCION': AppColors.latinGold,
+    'TRANSPORTE': AppColors.secondary,
     'ENTRETENIMIENTO': AppColors.latinPurple,
     'OTROS': AppColors.primaryDark,
   };
 
-  static String labelFor(String category) =>
-      labels[category] ?? _titleCase(category);
+  // Maps legacy Title Case labels to their UPPERCASE enum value.
+  static const Map<String, String> _legacyAliases = {
+    'Gastronomía': 'GASTRONOMIA',
+    'Tecnología': 'TECNOLOGIA',
+    'Artesanías': 'ARTESANIAS',
+    'Servicios': 'SERVICIOS',
+    'Moda': 'MODA',
+    'Agricultura': 'AGRICULTURA',
+    'Turismo': 'TURISMO',
+    'Salud': 'SALUD',
+    'Educación': 'EDUCACION',
+    'Construcción': 'CONSTRUCCION',
+    'Transporte': 'TRANSPORTE',
+    'Entretenimiento': 'ENTRETENIMIENTO',
+    'Otros': 'OTROS',
+  };
+
+  /// Returns the canonical UPPERCASE enum value, tolerating legacy Title Case labels.
+  static String normalize(String category) =>
+      _legacyAliases[category] ?? category;
 
   static IconData iconFor(String category) =>
-      icons[category] ?? Icons.store;
+      icons[normalize(category)] ?? Icons.store;
 
   static Color accentColorFor(String category) =>
-      accentColors[category] ?? AppColors.primary;
-
-  static String _titleCase(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .toLowerCase()
-        .split('_')
-        .map((part) =>
-            part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
+      accentColors[normalize(category)] ?? AppColors.primary;
 }

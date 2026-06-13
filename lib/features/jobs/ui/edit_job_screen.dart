@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latinterritory/core/constants/app_colors.dart';
 import 'package:latinterritory/core/constants/app_dimensions.dart';
 import 'package:latinterritory/core/networking/api_exceptions.dart';
+import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
+import 'package:latinterritory/shared/widgets/category_dropdown.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/utils/validators.dart';
 import 'package:latinterritory/shared/widgets/lt_button.dart';
@@ -36,13 +38,6 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
   bool _isLoadingInitial = true;
   bool _isLoading = false;
   String? _loadError;
-
-  static const _categories = [
-    'Pastelería',
-    'Construcción',
-    'Ventas',
-    'Marketing',
-  ];
 
   static const _locations = [
     'Brisbane',
@@ -234,11 +229,11 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
                 ),
                 const SizedBox(height: AppDimensions.md),
 
-                _EditDropdownField(
+                CategoryDropdown(
+                  vertical: CategoryVertical.job,
                   label: 'Categoría',
                   hint: 'Área de trabajo',
                   value: _category,
-                  items: _categories,
                   enabled: !_isLoading,
                   onChanged: (v) => setState(() => _category = v),
                   validator: (v) =>
