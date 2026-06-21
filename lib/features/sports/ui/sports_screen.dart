@@ -9,6 +9,8 @@ import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/sports/data/models/sports_models.dart';
 import 'package:latinterritory/features/sports/providers/sports_providers.dart';
 import 'package:latinterritory/features/sports/ui/sports_format.dart';
+// TEMPORAL — Mundial 2026 (feature/worldcup_2026). Quitar tras el 19-jul-2026.
+import 'package:latinterritory/features/worldcup_2026/ui/world_cup_entry_banner.dart';
 import 'package:latinterritory/shared/widgets/lt_pressable.dart';
 import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
@@ -39,6 +41,8 @@ class SportsScreen extends ConsumerWidget {
               children: [
                 _Header(eyebrow: 'RESULTADOS EN VIVO', title: 'Deportes', accent: c.coral),
                 const SizedBox(height: LTSpace.x4),
+                // TEMPORAL — Mundial 2026: banner que se auto-oculta tras el sunset.
+                const WorldCupEntryBanner(),
                 _LeagueSelector(selectedIndex: selectedIndex),
                 const SizedBox(height: LTSpace.x4),
                 async.when(
