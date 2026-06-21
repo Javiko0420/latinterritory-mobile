@@ -30,7 +30,7 @@ final worldCupConfigProvider =
 
 /// Resuelve si la campaña debe mostrarse. Prioriza el config del servidor;
 /// si no hay config (loading/error/null) cae al date-guard local.
-final worldCupVisibleProvider = Provider<bool>((ref) {
+final worldCupVisibleProvider = Provider.autoDispose<bool>((ref) {
   final now = ref.watch(clockProvider)();
   final cfg = ref.watch(worldCupConfigProvider).asData?.value;
   if (cfg != null) {
@@ -48,10 +48,14 @@ const _idleInterval = Duration(seconds: 60);
 class WorldCupLiveNotifier extends AsyncNotifier<WorldCupLive> {
   Timer? _timer;
   bool _paused = false;
+  bool _disposed = false;
 
   @override
   Future<WorldCupLive> build() async {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _timer?.cancel();
+    });
     final live = await ref.read(worldCupApiProvider).fetchLive();
     _schedule(live.hasLive);
     return live;
@@ -66,6 +70,7 @@ class WorldCupLiveNotifier extends AsyncNotifier<WorldCupLive> {
   /// Refresh silencioso: no vuelve a "Cargando…" y conserva datos si falla.
   Future<void> _tick() async {
     final next = await AsyncValue.guard(() => ref.read(worldCupApiProvider).fetchLive());
+    if (_disposed) return; // el provider pudo disponerse durante el await
     if (next.hasError && state.hasValue) {
       _schedule(state.value!.hasLive);
       return;

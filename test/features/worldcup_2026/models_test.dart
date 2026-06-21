@@ -70,6 +70,18 @@ void main() {
       expect(f.id, 9);
       expect(f.goals.home, 2);
     });
+
+    test('tolera números como String y basura sin lanzar', () {
+      final f = WorldCupFixture.fromJson({
+        'id': '123',
+        'status': {'elapsed': '67'},
+        'goals': {'home': '2', 'away': 'x'},
+      });
+      expect(f.id, 123);
+      expect(f.status.elapsed, 67);
+      expect(f.goals.home, 2);
+      expect(f.goals.away, isNull); // 'x' no parsea → null, sin crash
+    });
   });
 
   test('WorldCupLive.fromJson con fixtures vacíos', () {

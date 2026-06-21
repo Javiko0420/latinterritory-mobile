@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:latinterritory/features/worldcup_2026/models/world_cup_fixture.dart';
 
-int _asInt0(dynamic v) => v == null ? 0 : (v as num).toInt();
+int _asInt0(dynamic v) {
+  if (v is num) return v.toInt();
+  return int.tryParse(v?.toString() ?? '') ?? 0;
+}
 
 @immutable
 class StandingRow {

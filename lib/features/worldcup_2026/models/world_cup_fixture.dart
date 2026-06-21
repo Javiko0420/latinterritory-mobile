@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 
-int? _asInt(dynamic v) => v == null ? null : (v as num).toInt();
+int? _asInt(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString());
+}
 
 /// Fase del partido derivada de `status.short`.
 enum WcPhase { notStarted, live, finished, other }
