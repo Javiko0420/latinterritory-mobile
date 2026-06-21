@@ -173,7 +173,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
       appBar: AppBar(
         title: Text(
           'Publicar Negocio',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -333,7 +333,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                   children: [
                     Text(
                       'Fotos del negocio',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDark
@@ -344,7 +344,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '(mín. 1, máx. 5)',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.hankenGrotesk(
                         fontSize: 12,
                         color: AppColors.primary,
                       ),
@@ -385,7 +385,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                         const SizedBox(width: AppDimensions.sm),
                         Text(
                           'Subiendo imágenes...',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.hankenGrotesk(
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -403,7 +403,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                       _selectedImages.isEmpty
                           ? 'Agregar foto (obligatorio)'
                           : 'Agregar otra foto (${_selectedImages.length}/5)',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
@@ -442,7 +442,7 @@ class _CreateBusinessScreenState extends ConsumerState<CreateBusinessScreen> {
                     activeColor: AppColors.primary,
                     title: Text(
                       'Acepto los términos de publicación de negocios',
-                      style: GoogleFonts.dmSans(fontSize: 13),
+                      style: GoogleFonts.hankenGrotesk(fontSize: 13),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: const EdgeInsets.symmetric(
@@ -502,7 +502,7 @@ class _DropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: labelColor,

@@ -1,107 +1,176 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/weather/data/models/weather_models.dart';
 import 'package:latinterritory/features/weather/providers/weather_providers.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
-import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
+import 'package:latinterritory/features/weather/ui/weather_icon.dart';
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
+/// Pantalla de Clima (design system). Acento: azul.
+/// Reusa `weatherProvider` (ciudad de `selectedCityProvider`). No cambia datos.
 class WeatherScreen extends ConsumerWidget {
   const WeatherScreen({super.key});
 
+  // Card oscura (fija en ambos temas) + sol dorado.
+  static const _ink = Color(0xFFF1EDE3);
+  static const _sun = Color(0xFFE6B84D);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedCity = ref.watch(selectedCityProvider);
-    final weatherAsync = ref.watch(weatherProvider);
+    final c = context.lt;
+    final city = ref.watch(selectedCityProvider);
+    final async = ref.watch(weatherProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Clima')),
-      body: Column(
-        children: [
-          // ── City Selector ───────────────────────────
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPaddingH,
-                vertical: AppDimensions.sm,
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: LtScreenIn(
+          child: RefreshIndicator(
+            color: c.gold,
+            onRefresh: () async => ref.invalidate(weatherProvider),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                LTSpace.screenH, LTSpace.x4, LTSpace.screenH, LTSpace.screenBottom,
               ),
-              itemCount: allWeatherCities.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppDimensions.xs),
-              itemBuilder: (context, index) {
-                final city = allWeatherCities[index];
-                final isSelected = selectedCity.slug == city.slug;
-                return FilterChip(
-                  label: Text(
-                    city.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                    ),
+              children: [
+                _Header(eyebrow: 'CLIMA', title: 'El tiempo', accent: c.blue),
+                const SizedBox(height: LTSpace.x4),
+                _CitySelector(selected: city),
+                const SizedBox(height: LTSpace.x4),
+                async.when(
+                  loading: () => const _Loader(),
+                  error: (_, __) => _ErrorBox(
+                    onRetry: () => ref.invalidate(weatherProvider),
                   ),
-                  selected: isSelected,
-                  onSelected: (_) =>
-                      ref.read(selectedCityProvider.notifier).select(city),
-                  selectedColor: AppColors.primary,
-                  showCheckmark: false,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                );
-              },
+                  data: (bundle) => _WeatherBody(city: city, bundle: bundle),
+                ),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
 
-          // ── Weather Content ─────────────────────────
-          Expanded(
-            child: weatherAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.cloud_off,
-                        size: 48, color: AppColors.error),
-                    const SizedBox(height: AppDimensions.md),
-                    const Text('No se pudo cargar el clima.'),
-                    const SizedBox(height: AppDimensions.md),
-                    TextButton.icon(
-                      onPressed: () => ref.invalidate(weatherProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reintentar'),
-                    ),
-                  ],
+class _WeatherBody extends StatelessWidget {
+  const _WeatherBody({required this.city, required this.bundle});
+
+  final WeatherCity city;
+  final WeatherBundle bundle;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    final cur = bundle.current;
+    final temps = bundle.next24h.map((h) => h.temperatureC);
+    final maxT = (temps.isEmpty ? cur.temperatureC : temps.reduce((a, b) => a > b ? a : b)).round();
+    final minT = (temps.isEmpty ? cur.temperatureC : temps.reduce((a, b) => a < b ? a : b)).round();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HeroCard(city: city, current: cur, maxT: maxT, minT: minT),
+        const SizedBox(height: LTSpace.x5),
+        if (bundle.next24h.isNotEmpty) ...[
+          Text('POR HORA', style: LTType.eyebrow(c.blue)),
+          const SizedBox(height: 5),
+          Text('Próximas horas', style: LTType.title(c.ink)),
+          const SizedBox(height: 12),
+          _HourlyRow(hours: bundle.next24h),
+          const SizedBox(height: LTSpace.x5),
+        ],
+        Text('CONDICIONES', style: LTType.eyebrow(c.blue)),
+        const SizedBox(height: 5),
+        Text('Ahora mismo', style: LTType.title(c.ink)),
+        const SizedBox(height: 12),
+        _ConditionsCard(current: cur),
+      ],
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.city,
+    required this.current,
+    required this.maxT,
+    required this.minT,
+  });
+
+  final WeatherCity city;
+  final CurrentWeather current;
+  final int maxT;
+  final int minT;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [LTBrand.night, Color(0xFF16273F)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: c.softShadow,
+      ),
+      child: Column(
+        children: [
+          Text(
+            '${city.name.toUpperCase()}${city.country != null ? ', ${city.country!.toUpperCase()}' : ''}',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: WeatherScreen._ink.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(weatherIconFor(current.weatherCode), size: 46, color: WeatherScreen._sun),
+              const SizedBox(width: 10),
+              Text(
+                '${current.temperatureC.round()}°',
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 62,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -3,
+                  height: 1,
+                  color: WeatherScreen._ink,
                 ),
               ),
-              data: (bundle) => RefreshIndicator(
-                onRefresh: () async => ref.invalidate(weatherProvider),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-                  child: Column(
-                    children: [
-                      _CurrentWeatherCard(
-                        city: selectedCity,
-                        current: bundle.current,
-                      ),
-                      const SizedBox(height: AppDimensions.lg),
-                      _HourlyForecast(hours: bundle.next24h),
-                    ],
-                  ),
-                ),
-              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            current.weatherTextEs,
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: WeatherScreen._ink.withValues(alpha: 0.9),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Máx $maxT° · Mín $minT° · Sensación ${current.feelsLikeC.round()}°',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: WeatherScreen._ink.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -110,241 +179,251 @@ class WeatherScreen extends ConsumerWidget {
   }
 }
 
-class _CurrentWeatherCard extends StatelessWidget {
-  const _CurrentWeatherCard({required this.city, required this.current});
-  final WeatherCity city;
-  final CurrentWeather current;
+class _HourlyRow extends StatelessWidget {
+  const _HourlyRow({required this.hours});
 
-  IconData _weatherIcon(int code) {
-    if (code == 0 || code == 1) return Icons.wb_sunny;
-    if (code == 2) return Icons.cloud_queue;
-    if (code == 3) return Icons.cloud;
-    if (code >= 45 && code <= 48) return Icons.blur_on;
-    if (code >= 51 && code <= 67) return Icons.grain;
-    if (code >= 71 && code <= 77) return Icons.ac_unit;
-    if (code >= 80 && code <= 82) return Icons.umbrella;
-    if (code >= 95) return Icons.flash_on;
-    return Icons.cloud;
-  }
+  final List<HourlyPoint> hours;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-      child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1D5FA8),
-              AppColors.latinSkyBlue,
-              AppColors.secondaryLight,
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: AndeanPatternPainter(
-                    color: Colors.white,
-                    opacity: 0.07,
+    final c = context.lt;
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: hours.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, i) {
+          final h = hours[i];
+          final t = DateTime.tryParse(h.time);
+          final label = t != null ? DateFormat('HH:mm').format(t) : '';
+          return Container(
+            width: 66,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: c.line),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text(label, style: LTType.caption(c.ink2, size: 12)),
+                Icon(weatherIconFor(h.weatherCode), size: 24, color: c.blue),
+                Text(
+                  '${h.temperatureC.round()}°',
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: c.ink,
                   ),
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.lg),
-              child: Column(
-                children: [
-                  Text(
-                    '${city.name}, ${city.country}',
-                    style: GoogleFonts.dmSans(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.sm),
-                  Icon(
-                    _weatherIcon(current.weatherCode),
-                    size: 64,
-                    color: const Color(0xFFFFF176),
-                  ),
-                  const SizedBox(height: AppDimensions.sm),
-                  Text(
-                    '${current.temperatureC.round()}°',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 72,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-                  ),
-                  Text(
-                    current.weatherTextEs,
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _WeatherStat(
-                        icon: Icons.thermostat,
-                        label: 'Sensación',
-                        value: '${current.feelsLikeC.round()}°C',
-                      ),
-                      _WeatherStat(
-                        icon: Icons.water_drop,
-                        label: 'Humedad',
-                        value: '${current.humidityPercent}%',
-                      ),
-                      _WeatherStat(
-                        icon: Icons.air,
-                        label: 'Viento',
-                        value: '${current.windSpeedKmh.round()} km/h',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-class _WeatherStat extends StatelessWidget {
-  const _WeatherStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+class _ConditionsCard extends StatelessWidget {
+  const _ConditionsCard({required this.current});
+
+  final CurrentWeather current;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
+      ),
+      child: Row(
+        children: [
+          _Stat(icon: Icons.thermostat, label: 'Sensación', value: '${current.feelsLikeC.round()}°'),
+          _divider(c),
+          _Stat(icon: Icons.water_drop_outlined, label: 'Humedad', value: '${current.humidityPercent}%'),
+          _divider(c),
+          _Stat(icon: Icons.air, label: 'Viento', value: '${current.windSpeedKmh.round()} km/h'),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider(LTColors c) =>
+      Container(width: 1, height: 36, color: c.line);
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.icon, required this.label, required this.value});
+
   final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final c = context.lt;
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: c.blue),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: c.ink,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: LTType.caption(c.ink3, size: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CitySelector extends ConsumerWidget {
+  const _CitySelector({required this.selected});
+
+  final WeatherCity selected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: allWeatherCities.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final city = allWeatherCities[i];
+          final isSel = city.slug == selected.slug;
+          return LtPressable(
+            onTap: () => ref.read(selectedCityProvider.notifier).select(city),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSel ? c.gold : c.card,
+                borderRadius: BorderRadius.circular(LTRadius.pill),
+                border: Border.all(color: isSel ? c.gold : c.line),
+              ),
+              child: Text(
+                city.name,
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isSel ? LTBrand.onGold : c.ink2,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Header / estados compartidos ──────────────────────────
+
+class _Header extends StatelessWidget {
+  const _Header({required this.eyebrow, required this.title, required this.accent});
+
+  final String eyebrow;
+  final String title;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Row(
       children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+        LtPressable(
+          onTap: () => context.go('/home'),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(LTRadius.md),
+              border: Border.all(color: c.line),
+            ),
+            child: Icon(Icons.chevron_left, color: c.ink, size: 24),
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white60,
-            fontSize: 10,
-          ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(eyebrow, style: LTType.eyebrow(accent)),
+            const SizedBox(height: 2),
+            Text(title, style: LTType.display(c.ink, size: 26)),
+          ],
         ),
       ],
     );
   }
 }
 
-class _HourlyForecast extends StatelessWidget {
-  const _HourlyForecast({required this.hours});
-  final List<HourlyPoint> hours;
-
-  IconData _weatherIcon(int code) {
-    if (code == 0 || code == 1) return Icons.wb_sunny;
-    if (code == 2) return Icons.cloud_queue;
-    if (code == 3) return Icons.cloud;
-    if (code >= 51 && code <= 67) return Icons.grain;
-    if (code >= 71 && code <= 77) return Icons.ac_unit;
-    if (code >= 80) return Icons.umbrella;
-    return Icons.cloud;
-  }
+class _Loader extends StatelessWidget {
+  const _Loader();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Próximas 24 Horas',
-          style: context.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: AppDimensions.sm),
-        SizedBox(
-          height: 120,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: hours.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: AppDimensions.sm),
-            itemBuilder: (context, index) {
-              final h = hours[index];
-              final time = DateTime.tryParse(h.time);
-              final label = time != null
-                  ? DateFormat('HH:mm').format(time)
-                  : '';
+    final c = context.lt;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80),
+      child: Center(
+        child: CircularProgressIndicator(strokeWidth: 2, color: c.gold),
+      ),
+    );
+  }
+}
 
-              return Container(
-                width: 64,
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppDimensions.sm,
-                  horizontal: AppDimensions.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusMd),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                    Icon(
-                      _weatherIcon(h.weatherCode),
-                      size: 22,
-                      color: AppColors.primary,
-                    ),
-                    Text(
-                      '${h.temperatureC.round()}°',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (h.precipitationMm > 0)
-                      Text(
-                        '${h.precipitationMm.toStringAsFixed(1)}mm',
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        border: Border.all(color: c.line),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.cloud_off_outlined, size: 40, color: c.ink3),
+          const SizedBox(height: 12),
+          Text('No pudimos cargar el clima.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(
+            onTap: onRetry,
+            child: Text(
+              'Reintentar',
+              style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

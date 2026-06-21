@@ -1,619 +1,332 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/sports/data/models/sports_models.dart';
 import 'package:latinterritory/features/sports/providers/sports_providers.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
-import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
+import 'package:latinterritory/features/sports/ui/sports_format.dart';
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
+/// Pantalla de Deportes (design system). Acento: coral.
+/// Reusa `leagueDetailProvider` + `selectedLeagueIndexProvider`. No cambia datos.
 class SportsScreen extends ConsumerWidget {
   const SportsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final selectedIndex = ref.watch(selectedLeagueIndexProvider);
-    // leagueDetailProvider fetches by slug (colombia, england…) so the data
-    // is always aligned with the selected chip, regardless of API order.
-    final detailAsync = ref.watch(leagueDetailProvider);
+    final async = ref.watch(leagueDetailProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Deportes')),
-      body: Column(
-        children: [
-          // ── League selector ───────────────────────────
-          _LeagueSelector(selectedIndex: selectedIndex),
-
-          // ── Content ───────────────────────────────────
-          Expanded(
-            child: detailAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => _ErrorView(
-                onRetry: () => ref.invalidate(leagueDetailProvider),
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: LtScreenIn(
+          child: RefreshIndicator(
+            color: c.gold,
+            onRefresh: () async => ref.invalidate(leagueDetailProvider),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                LTSpace.screenH, LTSpace.x4, LTSpace.screenH, LTSpace.screenBottom,
               ),
-              data: (detail) => RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(leagueDetailProvider);
-                  try {
-                    await ref.read(leagueDetailProvider.future);
-                  } catch (_) {}
-                },
-                child: _SportsContent(detail: detail),
-              ),
+              children: [
+                _Header(eyebrow: 'RESULTADOS EN VIVO', title: 'Deportes', accent: c.coral),
+                const SizedBox(height: LTSpace.x4),
+                _LeagueSelector(selectedIndex: selectedIndex),
+                const SizedBox(height: LTSpace.x4),
+                async.when(
+                  loading: () => const _Loader(),
+                  error: (_, __) => _ErrorBox(onRetry: () => ref.invalidate(leagueDetailProvider)),
+                  data: (detail) => _SportsBody(detail: detail),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── League selector chips ─────────────────────────────────
-
-class _LeagueSelector extends ConsumerWidget {
-  const _LeagueSelector({required this.selectedIndex});
-  final int selectedIndex;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: SizedBox(
-        height: 52,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.screenPaddingH,
-            vertical: AppDimensions.sm,
-          ),
-          itemCount: leagueOptions.length,
-          separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.xs),
-          itemBuilder: (context, i) {
-            final opt = leagueOptions[i];
-            final isSelected = i == selectedIndex;
-            return FilterChip(
-              label: Text(
-                '${opt.flag} ${opt.label}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected
-                      ? Colors.white
-                      : AppColors.textSecondary,
-                ),
-              ),
-              selected: isSelected,
-              onSelected: (_) =>
-                  ref.read(selectedLeagueIndexProvider.notifier).select(i),
-              selectedColor: AppColors.primary,
-              showCheckmark: false,
-              side: BorderSide.none,
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusFull),
-              ),
-              visualDensity: VisualDensity.compact,
-            );
-          },
         ),
       ),
     );
   }
 }
 
-// ── Main scrollable content ───────────────────────────────
+class _SportsBody extends StatelessWidget {
+  const _SportsBody({required this.detail});
 
-class _SportsContent extends StatelessWidget {
-  const _SportsContent({required this.detail});
   final LeagueDetail detail;
 
   @override
   Widget build(BuildContext context) {
-    // Filter results to today's date for "Partidos de Hoy".
-    // Falls back to showing recent results when there are none today.
-    final today = DateTime.now();
-    final todayFixtures = detail.results.where((f) {
-      final date = DateTime.tryParse(f.dateIso)?.toLocal();
-      return date != null &&
-          date.year == today.year &&
-          date.month == today.month &&
-          date.day == today.day;
+    final c = context.lt;
+    final now = DateTime.now();
+    final todays = detail.results.where((f) {
+      final d = DateTime.tryParse(f.dateIso)?.toLocal();
+      return d != null && d.year == now.year && d.month == now.month && d.day == now.day;
     }).toList();
+    final hasToday = todays.isNotEmpty;
+    final fixtures = hasToday ? todays : detail.results.take(5).toList();
 
-    final hasToday = todayFixtures.isNotEmpty;
-    final displayFixtures =
-        hasToday ? todayFixtures : detail.results.take(5).toList();
-    final fixturesTitle =
-        hasToday ? 'Partidos de Hoy' : 'Últimos Resultados';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('PARTIDOS', style: LTType.eyebrow(c.coral)),
+        const SizedBox(height: 5),
+        Text(hasToday ? 'Hoy' : 'Últimos resultados', style: LTType.title(c.ink)),
+        const SizedBox(height: 12),
+        if (fixtures.isEmpty)
+          _EmptyBox(message: 'Sin partidos disponibles')
+        else
+          for (final f in fixtures) ...[
+            _MatchCard(fixture: f),
+            const SizedBox(height: 11),
+          ],
+        const SizedBox(height: LTSpace.x4),
+        Text('CLASIFICACIÓN', style: LTType.eyebrow(c.coral)),
+        const SizedBox(height: 5),
+        Text('Tabla de posiciones', style: LTType.title(c.ink)),
+        const SizedBox(height: 12),
+        if (detail.standings.isEmpty)
+          _EmptyBox(message: 'Sin tabla disponible')
+        else
+          _StandingsCard(standings: detail.standings),
+        const SizedBox(height: LTSpace.x4),
+        Center(
+          child: Text(
+            detail.season != null ? '${detail.league.name} · ${detail.season}' : detail.league.name,
+            style: LTType.caption(c.ink3, size: 12),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-    SimpleFixture? liveFixture;
-    for (final f in detail.results) {
-      const liveStatuses = {'1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'};
-      if (liveStatuses.contains(f.status)) {
-        liveFixture = f;
-        break;
-      }
+// ── Match card ────────────────────────────────────────────
+
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({required this.fixture});
+
+  final SimpleFixture fixture;
+
+  static const _finished = {'FT', 'AET', 'PEN', 'Match Finished'};
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    final live = isLiveStatus(fixture.status);
+    final finished = _finished.contains(fixture.status);
+    final showScore = live || finished;
+
+    String statusText;
+    Color statusColor;
+    if (live) {
+      statusText = fixture.elapsed != null ? "EN VIVO · ${fixture.elapsed}'" : 'EN VIVO';
+      statusColor = c.coral;
+    } else if (finished) {
+      statusText = 'FINAL';
+      statusColor = c.ink3;
+    } else {
+      final d = DateTime.tryParse(fixture.dateIso)?.toLocal();
+      statusText = d != null ? DateFormat("d MMM · HH:mm", 'es').format(d) : fixture.status;
+      statusColor = c.ink3;
     }
 
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (liveFixture != null) ...[
-            _LiveMatchHero(fixture: liveFixture),
-            const SizedBox(height: AppDimensions.lg),
-          ],
-
-          // ── Fixtures ──────────────────────────────────
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.sports_soccer,
-                  size: AppDimensions.iconMd, color: AppColors.primary),
-              const SizedBox(width: AppDimensions.xs),
+              if (live) ...[
+                Container(width: 6, height: 6, decoration: BoxDecoration(color: c.coral, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+              ],
               Text(
-                fixturesTitle,
-                style: context.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                statusText,
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: statusColor,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.sm),
-
-          if (displayFixtures.isEmpty)
-            const _EmptyState(
-              icon: Icons.sports_soccer_outlined,
-              message: 'Sin partidos disponibles',
-            )
-          else
-            ...displayFixtures.map((f) => _FixtureCard(fixture: f)),
-
-          const SizedBox(height: AppDimensions.lg),
-
-          // ── Standings ─────────────────────────────────
+          const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.leaderboard,
-                  size: AppDimensions.iconMd, color: AppColors.secondary),
-              const SizedBox(width: AppDimensions.xs),
-              Text(
-                'Tabla de Posiciones',
-                style: context.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+              Expanded(child: _TeamCol(name: fixture.home.name)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: showScore
+                    ? Row(
+                        children: [
+                          _score(c, fixture.goals.home),
+                          Text(' : ', style: GoogleFonts.hankenGrotesk(fontSize: 16, color: c.ink3, fontWeight: FontWeight.w700)),
+                          _score(c, fixture.goals.away),
+                        ],
+                      )
+                    : Text('vs', style: GoogleFonts.hankenGrotesk(fontSize: 16, fontWeight: FontWeight.w700, color: c.ink3)),
               ),
+              Expanded(child: _TeamCol(name: fixture.away.name)),
             ],
-          ),
-          const SizedBox(height: AppDimensions.sm),
-
-          if (detail.standings.isEmpty)
-            const _EmptyState(
-              icon: Icons.table_chart_outlined,
-              message: 'Sin tabla disponible',
-            )
-          else
-            _StandingsTable(standings: detail.standings),
-
-          const SizedBox(height: AppDimensions.lg),
-
-          Center(
-            child: Text(
-              detail.season != null
-                  ? '${detail.league.name} · ${detail.season}'
-                  : detail.league.name,
-              style: context.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textTertiary),
-              textAlign: TextAlign.center,
-            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _score(LTColors c, int? g) => Text(
+        '${g ?? 0}',
+        style: GoogleFonts.hankenGrotesk(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -1.3, color: c.ink),
+      );
 }
 
-// ── Live match hero (gradient + Andean pattern) ───────────
+class _TeamCol extends StatelessWidget {
+  const _TeamCol({required this.name});
 
-class _LiveMatchHero extends StatelessWidget {
-  const _LiveMatchHero({required this.fixture});
+  final String name;
 
-  final SimpleFixture fixture;
+  // Hue determinista por nombre (gold / blue / coral / green).
+  (Color, Color) _hue(LTColors c) {
+    final hues = [(c.gold, c.goldBg), (c.blue, c.blueSoft), (c.coral, c.coralSoft), (c.green, c.greenSoft)];
+    return hues[name.hashCode.abs() % hues.length];
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.latinRed, AppColors.primaryDark],
+    final c = context.lt;
+    final (accent, soft) = _hue(c);
+    return Column(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(color: soft, borderRadius: BorderRadius.circular(13)),
+          alignment: Alignment.center,
+          child: Text(
+            sportTeamCode(name),
+            style: GoogleFonts.hankenGrotesk(fontSize: 14, fontWeight: FontWeight.w800, color: accent),
           ),
         ),
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: AndeanPatternPainter(
-                    color: Colors.white,
-                    opacity: 0.12,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusFull),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.latinRed,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'EN VIVO',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.latinRed,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          fixture.home.name,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.sm),
-                        child: Text(
-                          '${fixture.goals.home ?? 0} – ${fixture.goals.away ?? 0}',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          fixture.away.name,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (fixture.elapsed != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      "${fixture.elapsed}'",
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 6),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: LTType.caption(c.ink2, size: 12, weight: FontWeight.w600),
         ),
-      ),
+      ],
     );
   }
 }
 
-// ── Fixture card ──────────────────────────────────────────
+// ── Standings ─────────────────────────────────────────────
 
-class _FixtureCard extends StatelessWidget {
-  const _FixtureCard({required this.fixture});
-  final SimpleFixture fixture;
+class _StandingsCard extends StatelessWidget {
+  const _StandingsCard({required this.standings});
 
-  bool get _isLive {
-    final s = fixture.status;
-    return s == '1H' ||
-        s == '2H' ||
-        s == 'HT' ||
-        s == 'ET' ||
-        s == 'BT' ||
-        s == 'P' ||
-        s == 'LIVE';
-  }
-
-  bool get _isFinished {
-    final s = fixture.status;
-    return s == 'Match Finished' || s == 'FT' || s == 'AET' || s == 'PEN';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final date = DateTime.tryParse(fixture.dateIso)?.toLocal();
-    final timeStr =
-        date != null ? DateFormat('HH:mm').format(date) : '--:--';
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppDimensions.sm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.md,
-          vertical: AppDimensions.sm + 2,
-        ),
-        child: Row(
-          children: [
-            // Home team
-            Expanded(
-              child: Text(
-                fixture.home.name,
-                textAlign: TextAlign.right,
-                style: context.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            const SizedBox(width: AppDimensions.sm),
-
-            // Score / time
-            Container(
-              width: 80,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isFinished || _isLive)
-                    Text(
-                      '${fixture.goals.home ?? 0} – ${fixture.goals.away ?? 0}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: _isLive ? AppColors.error : null,
-                      ),
-                    )
-                  else
-                    Text(
-                      timeStr,
-                      style: context.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  if (_isLive)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusFull),
-                      ),
-                      child: Text(
-                        fixture.elapsed != null
-                            ? "${fixture.elapsed}'"
-                            : 'EN VIVO',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  if (_isFinished)
-                    Text(
-                      'Final',
-                      style: context.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textTertiary),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: AppDimensions.sm),
-
-            // Away team
-            Expanded(
-              child: Text(
-                fixture.away.name,
-                textAlign: TextAlign.left,
-                style: context.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Standings table ───────────────────────────────────────
-
-class _StandingsTable extends StatelessWidget {
-  const _StandingsTable({required this.standings});
   final List<SimpleStanding> standings;
 
-  /// Group standings by the `group` field (for Libertadores, UCL, etc.).
-  /// Returns a list of [group name, list of standings] pairs.
-  /// If no group info exists, returns a single entry with null key.
   List<(String?, List<SimpleStanding>)> get _grouped {
     final hasGroups = standings.any((s) => s.group != null);
     if (!hasGroups) return [(null, standings)];
-
     final map = <String, List<SimpleStanding>>{};
     for (final s in standings) {
-      final key = s.group ?? 'Grupo';
-      (map[key] ??= []).add(s);
+      (map[s.group ?? 'Grupo'] ??= []).add(s);
     }
     return map.entries.map((e) => (e.key, e.value)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final headerStyle = context.textTheme.labelSmall?.copyWith(
-      fontWeight: FontWeight.bold,
-      color: AppColors.textSecondary,
-    );
-    final cellStyle = context.textTheme.bodySmall;
-    final ptsStyle = context.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.bold,
-      color: AppColors.primary,
-    );
-    final groupHeaderStyle = context.textTheme.labelSmall?.copyWith(
-      fontWeight: FontWeight.bold,
-      color: AppColors.secondary,
-      letterSpacing: 0.5,
-    );
-
-    final groups = _grouped;
-
-    return Card(
-      elevation: AppDimensions.cardElevation,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groups.map((entry) {
-            final (groupName, rows) = entry;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Group header (only for group-stage competitions)
-                if (groupName != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppDimensions.md, AppDimensions.sm, AppDimensions.md, 0),
-                    child: Text(groupName.toUpperCase(), style: groupHeaderStyle),
-                  ),
-
-                DataTable(
-                  headingRowHeight: 36,
-                  dataRowMinHeight: 36,
-                  dataRowMaxHeight: 44,
-                  columnSpacing: 10,
-                  headingRowColor: WidgetStateProperty.all(
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
-                  ),
-                  columns: [
-                    DataColumn(label: Text('#', style: headerStyle)),
-                    DataColumn(label: Text('Equipo', style: headerStyle)),
-                    DataColumn(label: Text('PJ', style: headerStyle)),
-                    DataColumn(label: Text('G', style: headerStyle)),
-                    DataColumn(label: Text('E', style: headerStyle)),
-                    DataColumn(label: Text('P', style: headerStyle)),
-                    DataColumn(label: Text('GF', style: headerStyle)),
-                    DataColumn(label: Text('GC', style: headerStyle)),
-                    DataColumn(label: Text('DG', style: headerStyle)),
-                    DataColumn(label: Text('Pts', style: headerStyle)),
-                  ],
-                  rows: rows.map((s) {
-                    final dg = s.goalsDiff > 0
-                        ? '+${s.goalsDiff}'
-                        : '${s.goalsDiff}';
-                    return DataRow(
-                      cells: [
-                        DataCell(Text('${s.rank}', style: cellStyle)),
-                        DataCell(
-                          SizedBox(
-                            width: 130,
-                            child: Text(
-                              s.team.name,
-                              style: cellStyle?.copyWith(
-                                  fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        DataCell(Text('${s.played}', style: cellStyle)),
-                        DataCell(Text('${s.won}', style: cellStyle)),
-                        DataCell(Text('${s.draw}', style: cellStyle)),
-                        DataCell(Text('${s.lost}', style: cellStyle)),
-                        DataCell(Text('${s.goalsFor}', style: cellStyle)),
-                        DataCell(Text('${s.goalsAgainst}', style: cellStyle)),
-                        DataCell(Text(dg, style: cellStyle)),
-                        DataCell(Text('${s.points}', style: ptsStyle)),
-                      ],
-                    );
-                  }).toList(),
+    final c = context.lt;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.md),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
+      ),
+      child: Column(
+        children: [
+          for (final (group, rows) in _grouped) ...[
+            if (group != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(group.toUpperCase(), style: LTType.eyebrow(c.coral)),
                 ),
-              ],
-            );
-          }).toList(),
-        ),
+              ),
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0 || group != null) Divider(height: 1, thickness: 1, color: c.line),
+              _StandingRow(s: rows[i]),
+            ],
+          ],
+        ],
       ),
     );
   }
 }
 
-// ── Empty state ───────────────────────────────────────────
+class _StandingRow extends StatelessWidget {
+  const _StandingRow({required this.s});
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.icon, required this.message});
-  final IconData icon;
-  final String message;
+  final SimpleStanding s;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppDimensions.xl),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      ),
-      child: Column(
+    final c = context.lt;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
         children: [
-          Icon(icon, size: AppDimensions.iconXl, color: AppColors.textTertiary),
-          const SizedBox(height: AppDimensions.sm),
+          SizedBox(
+            width: 18,
+            child: Text(
+              '${s.rank}',
+              style: GoogleFonts.hankenGrotesk(fontSize: 13, fontWeight: FontWeight.w800, color: c.ink3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(color: c.card2, borderRadius: BorderRadius.circular(8)),
+            alignment: Alignment.center,
+            child: Text(
+              sportTeamCode(s.team.name),
+              style: GoogleFonts.hankenGrotesk(fontSize: 11, fontWeight: FontWeight.w800, color: c.ink2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              s.team.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.hankenGrotesk(fontSize: 14, fontWeight: FontWeight.w700, color: c.ink),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
-            message,
-            style: context.textTheme.bodyMedium
-                ?.copyWith(color: AppColors.textSecondary),
+            '${s.points}',
+            style: GoogleFonts.hankenGrotesk(fontSize: 14, fontWeight: FontWeight.w800, color: c.gold),
           ),
         ],
       ),
@@ -621,30 +334,154 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Error view ────────────────────────────────────────────
+// ── League selector ───────────────────────────────────────
 
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry});
+class _LeagueSelector extends ConsumerWidget {
+  const _LeagueSelector({required this.selectedIndex});
+
+  final int selectedIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: leagueOptions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final opt = leagueOptions[i];
+          final isSel = i == selectedIndex;
+          return LtPressable(
+            onTap: () => ref.read(selectedLeagueIndexProvider.notifier).select(i),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSel ? c.coral : c.card,
+                borderRadius: BorderRadius.circular(LTRadius.pill),
+                border: Border.all(color: isSel ? c.coral : c.line),
+              ),
+              child: Text(
+                opt.label,
+                style: GoogleFonts.hankenGrotesk(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isSel ? Colors.white : c.ink2,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Header / estados ──────────────────────────────────────
+
+class _Header extends StatelessWidget {
+  const _Header({required this.eyebrow, required this.title, required this.accent});
+
+  final String eyebrow;
+  final String title;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Row(
+      children: [
+        LtPressable(
+          onTap: () => context.go('/home'),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(LTRadius.md),
+              border: Border.all(color: c.line),
+            ),
+            child: Icon(Icons.chevron_left, color: c.ink, size: 24),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(eyebrow, style: LTType.eyebrow(accent)),
+              const SizedBox(height: 2),
+              Text(title, style: LTType.display(c.ink, size: 26)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Loader extends StatelessWidget {
+  const _Loader();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+    );
+  }
+}
+
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.md),
+        border: Border.all(color: c.line),
+      ),
+      child: Center(child: Text(message, style: LTType.body(c.ink2))),
+    );
+  }
+}
+
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.onRetry});
+
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final c = context.lt;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        border: Border.all(color: c.line),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off_rounded,
-              size: AppDimensions.iconXl, color: AppColors.error),
-          const SizedBox(height: AppDimensions.md),
-          Text(
-            'No se pudieron cargar los deportes',
-            style: context.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppDimensions.md),
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
+          Icon(Icons.wifi_off_rounded, size: 40, color: c.ink3),
+          const SizedBox(height: 12),
+          Text('No pudimos cargar los deportes.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(
+            onTap: onRetry,
+            child: Text('Reintentar', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700)),
           ),
         ],
       ),

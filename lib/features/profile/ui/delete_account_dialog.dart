@@ -29,7 +29,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
           const SizedBox(width: 8),
           Text(
             tr(ref, 'profile.delete_account_title'),
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -39,7 +39,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
         children: [
           Text(
             tr(ref, 'profile.delete_account_warning'),
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.hankenGrotesk(
               fontSize: 14,
               color:
                   isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -62,7 +62,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
                   Expanded(
                     child: Text(
                       deleteState.error!,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.hankenGrotesk(
                           fontSize: 13, color: AppColors.error),
                     ),
                   ),
@@ -78,7 +78,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
                 : (v) => setState(() => _confirmed = v ?? false),
             title: Text(
               tr(ref, 'profile.delete_account_confirm_check'),
-              style: GoogleFonts.dmSans(fontSize: 13),
+              style: GoogleFonts.hankenGrotesk(fontSize: 13),
             ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
@@ -104,7 +104,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
                 )
               : Text(
                   tr(ref, 'profile.delete_account_confirm_btn'),
-                  style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+                  style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
                 ),
         ),
       ],

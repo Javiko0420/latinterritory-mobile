@@ -167,7 +167,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       appBar: AppBar(
         title: Text(
           'Publicar Evento',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -229,7 +229,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 // ── Fecha y hora ─────────────────────────
                 Text(
                   'Fecha y hora del evento',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: labelColor,
@@ -299,7 +299,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 // ── Imagen (opcional) ────────────────────
                 Text(
                   'Imagen del evento (opcional)',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: labelColor,
@@ -353,7 +353,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         color: AppColors.primary),
                     label: Text(
                       'Agregar imagen del evento',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
@@ -420,7 +420,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     activeColor: AppColors.primary,
                     title: Text(
                       'Acepto los términos de publicación de eventos',
-                      style: GoogleFonts.dmSans(fontSize: 13),
+                      style: GoogleFonts.hankenGrotesk(fontSize: 13),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: const EdgeInsets.symmetric(

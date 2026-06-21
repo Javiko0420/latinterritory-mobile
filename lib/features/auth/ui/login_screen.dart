@@ -142,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Latin Territory',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.hankenGrotesk(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: isDark
@@ -154,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Latinos conectados en el mundo',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.hankenGrotesk(
                       fontSize: 14,
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -232,7 +232,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'o continúa con',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.hankenGrotesk(
                             fontSize: 12,
                             color: isDark
                                 ? AppColors.darkTextTertiary
@@ -275,7 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text(
                         '¿No tienes cuenta? ',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.hankenGrotesk(
                           fontSize: 14,
                           color: isDark
                               ? AppColors.darkTextSecondary

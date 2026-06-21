@@ -49,15 +49,15 @@ class LtTextField extends StatelessWidget {
         isDark ? AppColors.darkSurfaceVariant : AppColors.surfaceVariant;
 
     final labelStyle = uppercaseLabel
-        ? GoogleFonts.spaceGrotesk(
+        ? GoogleFonts.hankenGrotesk(
             fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
             color: labelColor,
           )
-        : GoogleFonts.spaceGrotesk(
+        : GoogleFonts.hankenGrotesk(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: labelColor,
           );
 
@@ -79,8 +79,9 @@ class LtTextField extends StatelessWidget {
           maxLines: maxLines,
           onFieldSubmitted: onFieldSubmitted,
           autofillHints: autofillHints,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 15,
+            fontWeight: FontWeight.w500,
             color: isDark
                 ? AppColors.darkTextPrimary
                 : AppColors.textPrimary,
@@ -96,17 +97,21 @@ class LtTextField extends StatelessWidget {
               vertical: 13,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+              borderSide: BorderSide(
+                color: isDark
+                    ? AppColors.goldStrongDark
+                    : AppColors.goldStrong,
+                width: 2,
+              ),
             ),
           ),
         ),

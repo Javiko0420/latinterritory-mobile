@@ -147,7 +147,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       appBar: AppBar(
         title: Text(
           'Publicar Empleo',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -257,7 +257,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 // ── Contacto ─────────────────────────────
                 Text(
                   'Información de contacto (al menos uno)',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: isDark
@@ -322,7 +322,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         activeColor: AppColors.primary,
                         title: Text(
                           'Acepto los términos de publicación de empleo',
-                          style: GoogleFonts.dmSans(fontSize: 13),
+                          style: GoogleFonts.hankenGrotesk(fontSize: 13),
                         ),
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: const EdgeInsets.symmetric(
@@ -343,7 +343,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         activeColor: AppColors.primary,
                         title: Text(
                           'Confirmo que esta oferta no solicita pagos al candidato',
-                          style: GoogleFonts.dmSans(fontSize: 13),
+                          style: GoogleFonts.hankenGrotesk(fontSize: 13),
                         ),
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: const EdgeInsets.symmetric(
@@ -364,7 +364,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         activeColor: AppColors.primary,
                         title: Text(
                           'Confirmo que el salario ofrecido cumple con el salario mínimo australiano',
-                          style: GoogleFonts.dmSans(fontSize: 13),
+                          style: GoogleFonts.hankenGrotesk(fontSize: 13),
                         ),
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: const EdgeInsets.symmetric(
@@ -426,7 +426,7 @@ class _DropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: labelColor,

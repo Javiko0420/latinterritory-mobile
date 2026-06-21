@@ -174,7 +174,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Negocio',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -186,7 +186,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Negocio',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: Center(
@@ -225,7 +225,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
       appBar: AppBar(
         title: Text(
           'Editar Negocio',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -373,7 +373,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
                   children: [
                     Text(
                       'Fotos del negocio',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDark
@@ -384,7 +384,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '($totalImages/5)',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.hankenGrotesk(
                           fontSize: 12, color: AppColors.primary),
                     ),
                   ],
@@ -424,7 +424,7 @@ class _EditBusinessScreenState extends ConsumerState<EditBusinessScreen> {
                         color: AppColors.primary),
                     label: Text(
                       'Agregar foto',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
@@ -581,7 +581,7 @@ class _EditDropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: labelColor,

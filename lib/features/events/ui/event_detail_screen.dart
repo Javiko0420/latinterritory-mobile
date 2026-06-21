@@ -1,53 +1,47 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/categories/application/category_providers.dart';
 import 'package:latinterritory/features/categories/domain/category_option.dart';
-import 'package:latinterritory/core/i18n/locale_provider.dart';
-import 'package:latinterritory/features/events/providers/event_providers.dart';
+import 'package:latinterritory/features/events/data/event_category_utils.dart';
 import 'package:latinterritory/features/events/data/models/event_models.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/features/events/providers/event_providers.dart';
+import 'package:latinterritory/shared/widgets/lt_avatar.dart';
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
 class EventDetailScreen extends ConsumerWidget {
   const EventDetailScreen({super.key, required this.eventId});
+
   final String eventId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(eventDetailProvider(eventId));
+    final c = context.lt;
+    final async = ref.watch(eventDetailProvider(eventId));
 
     return Scaffold(
-      body: detailAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: AppDimensions.md),
-              const Text('No se pudo cargar el evento.'),
-              const SizedBox(height: AppDimensions.md),
-              TextButton.icon(
-                onPressed: () =>
-                    ref.invalidate(eventDetailProvider(eventId)),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        ),
-        data: (event) => _EventDetailBody(event: event),
+      backgroundColor: c.bg,
+      body: async.when(
+        loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+        error: (_, __) => _ErrorState(onRetry: () => ref.invalidate(eventDetailProvider(eventId))),
+        data: (event) => _Body(event: event),
       ),
     );
   }
 }
 
-class _EventDetailBody extends ConsumerWidget {
-  const _EventDetailBody({required this.event});
+class _Body extends ConsumerWidget {
+  const _Body({required this.event});
+
   final EventDetail event;
 
   Future<void> _launch(String url) async {
@@ -57,273 +51,258 @@ class _EventDetailBody extends ConsumerWidget {
     }
   }
 
+  String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final locale = ref.watch(localeProvider);
     final categoryLabel = ref.watch(eventCategoriesProvider).when(
-          data: (cats) => resolveCategory(event.category, cats)
-              .label(CategoryVertical.event, locale),
+          data: (cats) => resolveCategory(event.category, cats).label(CategoryVertical.event, locale),
           loading: () => event.category,
           error: (_, __) => event.category,
         );
-    final dateFormat = DateFormat("EEEE d 'de' MMMM, yyyy", 'en');
-    final timeFormat = DateFormat('h:mm a');
+    final accent = EventCategoryUtils.accentColorFor(event.category);
     final isFree = event.ticketPrice == null || event.ticketPrice == 0;
+    final fullDate = _cap(DateFormat("EEEE d 'de' MMMM, yyyy", 'es').format(event.eventDate));
+    final time = DateFormat('HH:mm', 'es').format(event.eventDate);
 
-    return CustomScrollView(
-      slivers: [
-        // ── Hero Image ──────────────────────────────
-        SliverAppBar(
-          expandedHeight: 280,
-          pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(
-              event.title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            background: event.imageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: event.imageUrl!,
-                    fit: BoxFit.cover,
-                    color: Colors.black.withValues(alpha: 0.3),
-                    colorBlendMode: BlendMode.darken,
-                  )
-                : Container(
+    return LtScreenIn(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _Cover(event: event, accent: accent),
+          Transform.translate(
+            offset: const Offset(0, -30),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: LTSpace.screenH),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Info card ─────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.amber.shade600,
-                          Colors.red.shade500,
-                        ],
-                      ),
+                      color: c.card,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: c.line),
+                      boxShadow: c.softShadow,
                     ),
-                    child: const Center(
-                      child: Icon(Icons.event,
-                          size: 64, color: Colors.white54),
-                    ),
-                  ),
-          ),
-        ),
-
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Date & Time Card ──────────────────
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppDimensions.md),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.amber.shade600,
-                                Colors.red.shade500,
-                              ],
+                        Row(
+                          children: [
+                            Expanded(child: Text(categoryLabel.toUpperCase(), style: LTType.eyebrow(accent))),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: isFree ? c.greenSoft : c.goldBg,
+                                borderRadius: BorderRadius.circular(LTRadius.pill),
+                              ),
+                              child: Text(
+                                isFree ? 'Gratis' : '\$${event.ticketPrice!.toStringAsFixed(0)} AUD',
+                                style: GoogleFonts.hankenGrotesk(fontSize: 11.5, fontWeight: FontWeight.w700, color: isFree ? c.green : c.goldText),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusMd),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                DateFormat('MMM')
-                                    .format(event.eventDate)
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                DateFormat('d').format(event.eventDate),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: AppDimensions.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dateFormat.format(event.eventDate),
-                                style: context.textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                timeFormat.format(event.eventDate),
-                                style:
-                                    context.textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(height: 8),
+                        Text(event.title, style: LTType.display(c.ink, size: 25)),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: AppDimensions.md),
-
-                // ── Location ──────────────────────────
-                Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          Colors.blue.withValues(alpha: 0.1),
-                      child: const Icon(Icons.location_on,
-                          color: Colors.blue),
-                    ),
-                    title: const Text('Location',
-                        style: TextStyle(fontSize: 12)),
-                    subtitle: Text(
-                      event.location,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    onTap: () => _launch(
-                        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.location)}'),
+                  const SizedBox(height: 14),
+                  // ── Fecha / hora ──────────────────────────
+                  _InfoRow(
+                    icon: Icons.calendar_today_outlined,
+                    accent: accent,
+                    title: fullDate,
+                    subtitle: time,
                   ),
-                ),
-                const SizedBox(height: AppDimensions.md),
-
-                // ── Category + Price ──────────────────
-                Row(
-                  children: [
-                    Chip(
-                      avatar: const Icon(Icons.category, size: 14),
-                      label: Text(categoryLabel,
-                          style: const TextStyle(fontSize: 12)),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    const SizedBox(width: AppDimensions.sm),
-                    Chip(
-                      avatar: Icon(
-                        isFree ? Icons.celebration : Icons.attach_money,
-                        size: 14,
-                        color: isFree ? Colors.green : null,
-                      ),
-                      label: Text(
-                        isFree
-                            ? 'Free'
-                            : '\$${event.ticketPrice!.toStringAsFixed(2)} AUD',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isFree ? Colors.green.shade700 : null,
+                  const SizedBox(height: 12),
+                  // ── Ubicación (tap → maps) ────────────────
+                  _InfoRow(
+                    icon: Icons.place_outlined,
+                    accent: c.blue,
+                    title: event.location,
+                    subtitle: 'Cómo llegar',
+                    onTap: () => _launch('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(event.location)}'),
+                  ),
+                  const SizedBox(height: 22),
+                  // ── Descripción ───────────────────────────
+                  Text('Sobre el evento', style: GoogleFonts.hankenGrotesk(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.32, color: c.ink)),
+                  const SizedBox(height: 8),
+                  Text(event.description, style: LTType.body(c.ink2)),
+                  const SizedBox(height: 22),
+                  // ── Organizador ───────────────────────────
+                  Text('Organiza', style: GoogleFonts.hankenGrotesk(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.32, color: c.ink)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      LtAvatar(name: event.organizer.name ?? 'Anónimo', size: 38),
+                      const SizedBox(width: 12),
+                      Text(event.organizer.name ?? 'Anónimo', style: LTType.body(c.ink, weight: FontWeight.w700)),
+                    ],
+                  ),
+                  // ── Entradas ──────────────────────────────
+                  if (event.ticketLink != null) ...[
+                    const SizedBox(height: 22),
+                    LtPressable(
+                      onTap: () => _launch(event.ticketLink!),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: c.gold,
+                          borderRadius: BorderRadius.circular(LTRadius.md),
+                          boxShadow: c.softShadow,
                         ),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppDimensions.lg),
-
-                // ── Description ───────────────────────
-                Text(
-                  'About this event',
-                  style: context.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppDimensions.sm),
-                Text(
-                  event.description,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.lg),
-
-                // ── Organizer ─────────────────────────
-                Text(
-                  'Organizer',
-                  style: context.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppDimensions.sm),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor:
-                          AppColors.primary.withValues(alpha: 0.12),
-                      child: Text(
-                        (event.organizer.name ?? 'A')[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.confirmation_number_outlined, size: 18, color: LTBrand.onGold),
+                            const SizedBox(width: 8),
+                            Text('Comprar entradas', style: GoogleFonts.hankenGrotesk(fontSize: 15, fontWeight: FontWeight.w800, color: LTBrand.onGold)),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppDimensions.sm),
+                    const SizedBox(height: 8),
                     Text(
-                      event.organizer.name ?? 'Anonymous',
-                      style: context.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w500),
+                      'Latin Territory no vende entradas. La compra la gestiona el organizador.',
+                      textAlign: TextAlign.center,
+                      style: LTType.caption(c.ink3, size: 12),
                     ),
                   ],
-                ),
-                const SizedBox(height: AppDimensions.lg),
-
-                // ── Ticket Button ─────────────────────
-                if (event.ticketLink != null) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _launch(event.ticketLink!),
-                      icon: const Icon(Icons.confirmation_num),
-                      label: const Text('Buy Tickets'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade500,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: AppDimensions.md),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusMd),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.sm),
-                  Text(
-                    'Latin Territory does not sell tickets. Purchases are handled by the organizer.',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  const SizedBox(height: 36),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                const SizedBox(height: AppDimensions.xl),
+// ── Cover ─────────────────────────────────────────────────
+
+class _Cover extends StatelessWidget {
+  const _Cover({required this.event, required this.accent});
+
+  final EventDetail event;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 268,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (event.imageUrl != null)
+            CachedNetworkImage(imageUrl: event.imageUrl!, fit: BoxFit.cover, placeholder: (_, __) => _ph(), errorWidget: (_, __, ___) => _ph())
+          else
+            _ph(),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 18,
+            child: LtPressable(
+              onTap: () => context.pop(),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), shape: BoxShape.circle),
+                child: const Icon(Icons.chevron_left, color: Color(0xFF1A1916), size: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ph() => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [accent, accent.withValues(alpha: 0.55)],
+          ),
+        ),
+        child: Center(child: Icon(Icons.celebration_outlined, size: 54, color: Colors.white.withValues(alpha: 0.85))),
+      );
+}
+
+// ── Info row card ─────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.accent, required this.title, required this.subtitle, this.onTap});
+
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    final card = Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.md),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: LTType.body(c.ink, size: 14, weight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: LTType.caption(c.ink2, size: 12.5)),
               ],
             ),
           ),
-        ),
-      ],
+          if (onTap != null) Icon(Icons.chevron_right, size: 20, color: c.ink3),
+        ],
+      ),
+    );
+    return onTap != null ? LtPressable(onTap: onTap, child: card) : card;
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 40, color: c.ink3),
+          const SizedBox(height: 12),
+          Text('No pudimos cargar el evento.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(onTap: onRetry, child: Text('Reintentar', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700))),
+        ],
+      ),
     );
   }
 }

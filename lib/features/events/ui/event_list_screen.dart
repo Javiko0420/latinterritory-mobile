@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/i18n/locale_provider.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
-import 'package:latinterritory/features/events/data/models/event_models.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/categories/domain/category_option.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
 import 'package:latinterritory/shared/widgets/category_filter_chips.dart';
+import 'package:latinterritory/shared/widgets/lt_cards.dart';
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
+/// Eventos (design system). Reusa `eventListProvider` + filtros. Tab.
 class EventListScreen extends ConsumerStatefulWidget {
   const EventListScreen({super.key});
 
@@ -27,306 +30,175 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     super.dispose();
   }
 
-  void _onSearch(String value) {
-    ref.read(eventFilterProvider.notifier).setQuery(
-          value.isEmpty ? null : value,
-        );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final eventsAsync = ref.watch(eventListProvider);
-    final currentFilter = ref.watch(eventFilterProvider);
+    final c = context.lt;
+    final async = ref.watch(eventListProvider);
+    final filter = ref.watch(eventFilterProvider);
+    final localeCode = ref.watch(localeProvider).languageCode;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Eventos')),
-      body: Column(
-        children: [
-          // ── Search Bar (pill) ───────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.screenPaddingH,
-              AppDimensions.sm,
-              AppDimensions.screenPaddingH,
-              0,
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearch,
-              decoration: InputDecoration(
-                hintText: 'Buscar eventos...',
-                prefixIcon: const Icon(Icons.search,
-                    color: AppColors.textTertiary),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearch('');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor:
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide:
-                      const BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.md,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Category Chips ──────────────────────────
-          CategoryFilterChips(
-            vertical: CategoryVertical.event,
-            selectedValue: currentFilter.category,
-            onChanged: (value) =>
-                ref.read(eventFilterProvider.notifier).setCategory(value),
-          ),
-
-          // ── Event List ──────────────────────────────
-          Expanded(
-            child: eventsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: LtScreenIn(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(LTSpace.screenH, LTSpace.x4, LTSpace.screenH, 0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.error),
-                    const SizedBox(height: AppDimensions.md),
-                    const Text('No se pudieron cargar los eventos.'),
-                    const SizedBox(height: AppDimensions.md),
-                    TextButton.icon(
-                      onPressed: () =>
-                          ref.invalidate(eventListProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reintentar'),
+                    Text('AGENDA CULTURAL', style: LTType.eyebrow(c.coral)),
+                    const SizedBox(height: 4),
+                    Text('Eventos', style: LTType.display(c.ink)),
+                    const SizedBox(height: LTSpace.x4),
+                    _SearchField(
+                      controller: _searchController,
+                      onChanged: (v) => ref.read(eventFilterProvider.notifier).setQuery(v.isEmpty ? null : v),
+                      onClear: () {
+                        _searchController.clear();
+                        ref.read(eventFilterProvider.notifier).setQuery(null);
+                      },
                     ),
+                    const SizedBox(height: 14),
                   ],
                 ),
               ),
-              data: (paginated) {
-                if (paginated.events.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.event_busy,
-                            size: 64, color: AppColors.textTertiary),
-                        const SizedBox(height: AppDimensions.md),
-                        Text(
-                          'No hay eventos próximos',
-                          style: context.textTheme.titleMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        if (currentFilter.category != null ||
-                            currentFilter.query != null)
-                          TextButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              ref
-                                  .read(eventFilterProvider.notifier)
-                                  .clear();
-                            },
-                            child: const Text('Limpiar filtros'),
-                          ),
-                      ],
-                    ),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async =>
-                      ref.invalidate(eventListProvider),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(
-                        AppDimensions.screenPaddingH),
-                    itemCount: paginated.events.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppDimensions.sm),
-                    itemBuilder: (context, index) {
-                      return _EventCard(event: paginated.events[index]);
-                    },
-                  ),
-                );
-              },
-            ),
+              CategoryFilterChips(
+                vertical: CategoryVertical.event,
+                selectedValue: filter.category,
+                onChanged: (value) => ref.read(eventFilterProvider.notifier).setCategory(value),
+              ),
+              Expanded(
+                child: async.when(
+                  loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+                  error: (_, __) => _ErrorState(onRetry: () => ref.invalidate(eventListProvider)),
+                  data: (paginated) {
+                    if (paginated.events.isEmpty) {
+                      return _EmptyState(
+                        hasFilters: filter.category != null || filter.query != null,
+                        onClear: () {
+                          _searchController.clear();
+                          ref.read(eventFilterProvider.notifier).clear();
+                        },
+                      );
+                    }
+                    return RefreshIndicator(
+                      color: c.gold,
+                      onRefresh: () async => ref.invalidate(eventListProvider),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(LTSpace.screenH, 14, LTSpace.screenH, 16),
+                        itemCount: paginated.events.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 14),
+                        itemBuilder: (context, i) {
+                          final e = paginated.events[i];
+                          return LtEventCard(
+                            event: e,
+                            localeCode: localeCode,
+                            onTap: () => context.pushNamed(RouteNames.eventDetail, pathParameters: {'id': e.id}),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Search field ──────────────────────────────────────────
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged, required this.onClear});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: LTType.body(c.ink),
+      decoration: InputDecoration(
+        hintText: 'Buscar eventos',
+        hintStyle: LTType.body(c.ink3),
+        prefixIcon: Icon(Icons.search, color: c.ink3, size: 20),
+        suffixIcon: controller.text.isNotEmpty
+            ? IconButton(icon: Icon(Icons.close, color: c.ink3, size: 18), onPressed: onClear)
+            : null,
+        filled: true,
+        fillColor: c.card,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.gold, width: 1.5)),
+      ),
+    );
+  }
+}
+
+// ── Estados ───────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.hasFilters, required this.onClear});
+
+  final bool hasFilters;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(color: c.coralSoft, borderRadius: BorderRadius.circular(LTRadius.lg)),
+            child: Icon(Icons.event_outlined, size: 30, color: c.coral),
+          ),
+          const SizedBox(height: 14),
+          Text('No hay eventos disponibles', style: LTType.card(c.ink, size: 16)),
+          if (hasFilters) ...[
+            const SizedBox(height: 8),
+            LtPressable(onTap: onClear, child: Text('Limpiar filtros', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700))),
+          ],
         ],
       ),
     );
   }
 }
 
-class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
-  final Event event;
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final timeFormat = DateFormat('h:mm a');
-    final isFree = event.ticketPrice == null || event.ticketPrice == 0;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          context.pushNamed(
-            RouteNames.eventDetail,
-            pathParameters: {'id': event.id},
-          );
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Date Column ───────────────────────────
-            Container(
-              width: 72,
-              padding: const EdgeInsets.symmetric(vertical: AppDimensions.md),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.latinPurple,
-                    AppColors.primary,
-                  ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    DateFormat('MMM').format(event.eventDate).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    DateFormat('d').format(event.eventDate),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    timeFormat.format(event.eventDate),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Content ───────────────────────────────
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Category + Price
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.sm,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusFull),
-                          ),
-                          child: Text(
-                            event.category,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          isFree
-                              ? 'Gratis'
-                              : '\$${event.ticketPrice!.toStringAsFixed(0)} AUD',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isFree
-                                ? Colors.green.shade600
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimensions.sm),
-
-                    // Title
-                    Text(
-                      event.title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppDimensions.xs),
-
-                    // Location
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined,
-                            size: 14, color: AppColors.textTertiary),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            event.location,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: AppColors.textTertiary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    final c = context.lt;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 40, color: c.ink3),
+          const SizedBox(height: 12),
+          Text('No pudimos cargar los eventos.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(onTap: onRetry, child: Text('Reintentar', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700))),
+        ],
       ),
     );
   }

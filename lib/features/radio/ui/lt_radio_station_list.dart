@@ -36,7 +36,7 @@ void showStationSheet(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 'Estaciones de Radio',
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.hankenGrotesk(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
@@ -58,7 +58,7 @@ void showStationSheet(
                         Text(s.country, style: const TextStyle(fontSize: 28)),
                     title: Text(
                       s.name,
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                         color:
@@ -67,7 +67,7 @@ void showStationSheet(
                     ),
                     subtitle: Text(
                       '${s.frequency} · ${s.genre}',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.hankenGrotesk(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),

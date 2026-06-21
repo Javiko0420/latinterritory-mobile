@@ -1,408 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/exchange/data/models/exchange_models.dart';
 import 'package:latinterritory/features/exchange/providers/exchange_providers.dart';
-import 'package:latinterritory/shared/extensions/context_extensions.dart';
-import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
+import 'package:latinterritory/features/exchange/ui/lt_exchange_rate_widget.dart' show formatRate;
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
-// ── Currency metadata ─────────────────────────────────────
-
-class _CurrencyMeta {
-  const _CurrencyMeta(this.flag, this.name);
-  final String flag;
-  final String name;
-}
-
-const _meta = <String, _CurrencyMeta>{
-  'USD': _CurrencyMeta('🇺🇸', 'Dólar Estadounidense'),
-  'EUR': _CurrencyMeta('🇪🇺', 'Euro'),
-  'GBP': _CurrencyMeta('🇬🇧', 'Libra Esterlina'),
-  'CAD': _CurrencyMeta('🇨🇦', 'Dólar Canadiense'),
-  'AUD': _CurrencyMeta('🇦🇺', 'Dólar Australiano'),
-  'MXN': _CurrencyMeta('🇲🇽', 'Peso Mexicano'),
-  'BRL': _CurrencyMeta('🇧🇷', 'Real Brasileño'),
-  'ARS': _CurrencyMeta('🇦🇷', 'Peso Argentino'),
-  'CLP': _CurrencyMeta('🇨🇱', 'Peso Chileno'),
-  'JPY': _CurrencyMeta('🇯🇵', 'Yen Japonés'),
-  'CNY': _CurrencyMeta('🇨🇳', 'Yuan Chino'),
-  'COP': _CurrencyMeta('🇨🇴', 'Peso Colombiano'),
+// Nombres de moneda (sin emojis). Fallback al código si no está mapeado.
+const _currencyNames = <String, String>{
+  'AUD': 'Dólar australiano',
+  'COP': 'Peso colombiano',
+  'MXN': 'Peso mexicano',
+  'ARS': 'Peso argentino',
+  'BRL': 'Real brasileño',
+  'CLP': 'Peso chileno',
+  'PEN': 'Sol peruano',
+  'UYU': 'Peso uruguayo',
+  'BOB': 'Boliviano',
+  'PYG': 'Guaraní',
+  'VES': 'Bolívar',
+  'USD': 'Dólar estadounidense',
+  'EUR': 'Euro',
 };
 
-String _flag(String code) => _meta[code]?.flag ?? '';
-String _name(String code) => _meta[code]?.name ?? code;
+// Orden de la lista (audiencia latina + referencias).
+const _ratesOrder = [
+  'COP', 'MXN', 'ARS', 'BRL', 'CLP', 'PEN', 'UYU', 'BOB', 'USD', 'EUR',
+];
 
-String _fmt(double value) {
-  if (value >= 1000) return NumberFormat('#,##0', 'en_US').format(value);
-  if (value >= 10) return NumberFormat('#,##0.0#', 'en_US').format(value);
-  if (value >= 1) return NumberFormat('#,##0.00', 'en_US').format(value);
-  return NumberFormat('#,##0.0000', 'en_US').format(value);
-}
+String _name(String code) => _currencyNames[code] ?? code;
 
-// ── Screen ────────────────────────────────────────────────
-
-class ExchangeScreen extends ConsumerStatefulWidget {
+class ExchangeScreen extends ConsumerWidget {
   const ExchangeScreen({super.key});
 
   @override
-  ConsumerState<ExchangeScreen> createState() => _ExchangeScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
+    final async = ref.watch(audRatesProvider);
+
+    return Scaffold(
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: LtScreenIn(
+          child: RefreshIndicator(
+            color: c.gold,
+            onRefresh: () async => ref.invalidate(audRatesProvider),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                LTSpace.screenH, LTSpace.x4, LTSpace.screenH, LTSpace.screenBottom,
+              ),
+              children: [
+                _Header(eyebrow: 'TASAS AL INSTANTE', title: 'Cambio de divisas', accent: c.green),
+                const SizedBox(height: LTSpace.x4),
+                const _ConverterCard(),
+                const SizedBox(height: LTSpace.x5),
+                const _BaseCard(),
+                const SizedBox(height: LTSpace.x5),
+                async.when(
+                  loading: () => const _Loader(),
+                  error: (_, __) => _ErrorBox(onRetry: () => ref.invalidate(audRatesProvider)),
+                  data: (data) => _RatesList(data: data),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ExchangeScreenState extends ConsumerState<ExchangeScreen> {
-  final _amountController = TextEditingController(text: '1');
-  double _fromAmount = 1.0;
+// ── Convertidor (funcionalidad existente, re-estilizada) ──────────────────
+
+class _ConverterCard extends ConsumerStatefulWidget {
+  const _ConverterCard();
+
+  @override
+  ConsumerState<_ConverterCard> createState() => _ConverterCardState();
+}
+
+class _ConverterCardState extends ConsumerState<_ConverterCard> {
+  final _amountCtrl = TextEditingController(text: '1');
+  double _amount = 1;
+
+  static const _ink = Color(0xFFF1EDE3);
 
   @override
   void dispose() {
-    _amountController.dispose();
+    _amountCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final rateAsync = ref.watch(exchangeRateProvider);
-    final popularAsync = ref.watch(popularRatesProvider);
-    final toAmount = rateAsync.asData?.value != null
-        ? rateAsync.asData!.value.rate * _fromAmount
-        : null;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tasas de Cambio')),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(popularRatesProvider);
-          ref.invalidate(exchangeRateProvider);
-          try {
-            await Future.wait([
-              ref.read(popularRatesProvider.future),
-              ref.read(exchangeRateProvider.future),
-            ]);
-          } catch (_) {}
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppDimensions.screenPaddingH),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Converter ─────────────────────────────
-              _ConverterCard(
-                amountController: _amountController,
-                toAmount: toAmount,
-                rateAsync: rateAsync,
-                onAmountChanged: (v) => setState(() {
-                  _fromAmount = double.tryParse(v) ?? 0.0;
-                }),
-              ),
-
-              const SizedBox(height: AppDimensions.lg),
-
-              // ── Popular rates ─────────────────────────
-              Text(
-                'Monedas Populares vs COP',
-                style: context.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppDimensions.sm),
-              popularAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppDimensions.xl),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => _PopularRatesError(
-                  onRetry: () => ref.invalidate(popularRatesProvider),
-                ),
-                data: (rates) => _PopularRatesGrid(rates: rates),
-              ),
-
-              // ── Last update ───────────────────────────
-              if (popularAsync.asData?.value != null) ...[
-                const SizedBox(height: AppDimensions.md),
-                _LastUpdateRow(
-                    lastUpdate: popularAsync.asData!.value.lastUpdate),
-              ],
-
-              const SizedBox(height: AppDimensions.lg),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Converter card ────────────────────────────────────────
-
-class _ConverterCard extends ConsumerWidget {
-  const _ConverterCard({
-    required this.amountController,
-    required this.toAmount,
-    required this.rateAsync,
-    required this.onAmountChanged,
-  });
-
-  final TextEditingController amountController;
-  final double? toAmount;
-  final AsyncValue<ConversionData> rateAsync;
-  final ValueChanged<String> onAmountChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final s = ref.watch(exchangeConverterProvider);
     final notifier = ref.read(exchangeConverterProvider.notifier);
-    final innerFill = Colors.white.withValues(alpha: 0.16);
-    final innerBorder = Colors.white.withValues(alpha: 0.25);
+    final rateAsync = ref.watch(exchangeRateProvider);
+    final conv = rateAsync.asData?.value;
+    final result = conv != null ? conv.rate * _amount : null;
+    final fill = Colors.white.withValues(alpha: 0.14);
 
-    InputDecoration field({String? prefixText}) => InputDecoration(
-          filled: true,
-          fillColor: innerFill,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.sm,
-            vertical: AppDimensions.sm,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            borderSide: BorderSide(color: innerBorder),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            borderSide: BorderSide(color: innerBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            borderSide:
-                const BorderSide(color: Colors.white, width: 1.5),
-          ),
-          prefixText: prefixText,
-          prefixStyle: const TextStyle(color: Colors.white),
-        );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.secondary, AppColors.secondaryDark],
-          ),
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [LTBrand.night, Color(0xFF16273F)],
         ),
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: AndeanPatternPainter(
-                    color: Colors.white,
-                    opacity: 0.10,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        boxShadow: c.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CONVERTIDOR',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.54,
+              color: _ink.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _Picker(value: s.fromCurrency, onChanged: notifier.setFromCurrency, fill: fill)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _amountCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+                  textAlign: TextAlign.end,
+                  style: GoogleFonts.hankenGrotesk(color: _ink, fontSize: 16, fontWeight: FontWeight.w800),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: true,
+                    fillColor: fill,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(LTRadius.sm),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (v) => setState(() => _amount = double.tryParse(v) ?? 0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  conv != null ? '1 ${conv.from.currency} = ${formatRate(conv.rate)} ${conv.to.currency}' : '…',
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: _ink.withValues(alpha: 0.8),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.currency_exchange,
-                          color: Colors.white, size: AppDimensions.iconMd),
-                      const SizedBox(width: AppDimensions.sm),
-                      Text(
-                        'Convertidor',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.md),
-
-                  // ── De ────────────────────────────────
-                  Text(
-                    'De',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.xs),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _CurrencyDropdown(
-                          value: s.fromCurrency,
-                          onChanged: notifier.setFromCurrency,
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.sm),
-                      Expanded(
-                        child: TextField(
-                          controller: amountController,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[\d.]')),
-                          ],
-                          textAlign: TextAlign.end,
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration:
-                              field(prefixText: '${_flag(s.fromCurrency)} '),
-                          onChanged: onAmountChanged,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.sm),
-
-                  // ── Rate + swap button ────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: rateAsync.when(
-                          loading: () => const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          error: (e, _) => Text(
-                            'Error al obtener tasa',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              color: Colors.white,
-                            ),
-                          ),
-                          data: (conv) => Text(
-                            '1 ${conv.from.currency} = ${_fmt(conv.rate)} ${conv.to.currency}',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              color:
-                                  Colors.white.withValues(alpha: 0.85),
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: notifier.swap,
-                        icon: const Icon(Icons.swap_vert_rounded),
-                        color: Colors.white,
-                        tooltip: 'Intercambiar monedas',
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.xs),
-
-                  // ── A ─────────────────────────────────
-                  Text(
-                    'A',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.xs),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _CurrencyDropdown(
-                          value: s.toCurrency,
-                          onChanged: notifier.setToCurrency,
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.sm),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.sm,
-                            vertical: 13,
-                          ),
-                          decoration: BoxDecoration(
-                            color: innerFill,
-                            border: Border.all(color: innerBorder),
-                            borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusSm),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${_flag(s.toCurrency)} ',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              Flexible(
-                                child: Text(
-                                  toAmount != null ? _fmt(toAmount!) : '—',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              GestureDetector(
+                onTap: notifier.swap,
+                child: Icon(Icons.swap_vert_rounded, color: _ink, size: 22),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _Picker(value: s.toCurrency, onChanged: notifier.setToCurrency, fill: fill)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  height: 46,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(LTRadius.sm),
+                  ),
+                  child: Text(
+                    result != null ? formatRate(result) : '—',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.hankenGrotesk(color: _ink, fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Currency dropdown ─────────────────────────────────────
-
-class _CurrencyDropdown extends StatelessWidget {
-  const _CurrencyDropdown({required this.value, required this.onChanged});
+class _Picker extends StatelessWidget {
+  const _Picker({required this.value, required this.onChanged, required this.fill});
 
   final String value;
   final ValueChanged<String> onChanged;
+  final Color fill;
+
+  static const _ink = Color(0xFFF1EDE3);
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.sm,
-          vertical: AppDimensions.xs,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-        ),
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(LTRadius.sm),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          items: supportedCurrencies.map((code) {
-            return DropdownMenuItem(
-              value: code,
-              child: Text('${_flag(code)} $code'),
-            );
-          }).toList(),
+          dropdownColor: const Color(0xFF1B1F26),
+          iconEnabledColor: _ink,
+          style: GoogleFonts.hankenGrotesk(color: _ink, fontSize: 15, fontWeight: FontWeight.w700),
+          items: supportedCurrencies
+              .map((code) => DropdownMenuItem(value: code, child: Text(code)))
+              .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);
           },
@@ -412,135 +245,233 @@ class _CurrencyDropdown extends StatelessWidget {
   }
 }
 
-// ── Popular rates grid ────────────────────────────────────
-
-const _popularOrder = [
-  'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'MXN', 'BRL', 'ARS', 'CLP', 'JPY', 'CNY',
-];
-
-class _PopularRatesGrid extends StatelessWidget {
-  const _PopularRatesGrid({required this.rates});
-  final ExchangeRatesData rates;
+class _BaseCard extends StatelessWidget {
+  const _BaseCard();
 
   @override
   Widget build(BuildContext context) {
-    final currencies =
-        _popularOrder.where((c) => rates.rates.containsKey(c)).toList();
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppDimensions.sm,
-        crossAxisSpacing: AppDimensions.sm,
-        childAspectRatio: 1.7,
+    final c = context.lt;
+    return Container(
+      padding: const EdgeInsets.all(LTSpace.x4),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
       ),
-      itemCount: currencies.length,
-      itemBuilder: (context, i) {
-        final code = currencies[i];
-        final raw = rates.rates[code] ?? 0.0;
-        final rateVsCop = raw > 0 ? 1.0 / raw : 0.0;
-        return _RateCard(code: code, copRate: rateVsCop);
-      },
-    );
-  }
-}
-
-class _RateCard extends StatelessWidget {
-  const _RateCard({required this.code, required this.copRate});
-
-  final String code;
-  final double copRate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: AppDimensions.cardElevation,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Row(
-              children: [
-                Text(_flag(code), style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: AppDimensions.xs),
-                Text(
-                  code,
-                  style: context.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: c.goldBg,
+              borderRadius: BorderRadius.circular(14),
             ),
-            Text(
-              _name(code),
-              style: context.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              '1 $code = ${_fmt(copRate)} COP',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
+            alignment: Alignment.center,
+            child: Text(
+              'AUD',
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: c.goldText,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Error widget ──────────────────────────────────────────
-
-class _PopularRatesError extends StatelessWidget {
-  const _PopularRatesError({required this.onRetry});
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: AppDimensions.lg),
-          const Icon(Icons.error_outline,
-              color: AppColors.error, size: AppDimensions.iconXl),
-          const SizedBox(height: AppDimensions.sm),
-          const Text('No se pudieron cargar las tasas'),
-          const SizedBox(height: AppDimensions.sm),
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
           ),
-          const SizedBox(height: AppDimensions.lg),
+          const SizedBox(width: LTSpace.x3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('BASE', style: LTType.eyebrow(c.ink3)),
+                const SizedBox(height: 2),
+                Text('Dólar australiano', style: LTType.card(c.ink, size: 17)),
+              ],
+            ),
+          ),
+          Text(
+            r'$1',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.48,
+              color: c.ink,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Last update ───────────────────────────────────────────
+class _RatesList extends ConsumerWidget {
+  const _RatesList({required this.data});
 
-class _LastUpdateRow extends StatelessWidget {
-  const _LastUpdateRow({required this.lastUpdate});
-  final String lastUpdate;
+  final ExchangeRatesData data;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final codes = _ratesOrder.where((code) => data.rates.containsKey(code)).toList();
+
+    return Column(
+      children: [
+        for (final code in codes) ...[
+          _RateRow(code: code, value: data.rates[code]!),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _RateRow extends StatelessWidget {
+  const _RateRow({required this.code, required this.value});
+
+  final String code;
+  final double value;
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.tryParse(lastUpdate)?.toLocal();
-    if (date == null) return const SizedBox.shrink();
+    final c = context.lt;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.md),
+        border: Border.all(color: c.line),
+        boxShadow: c.softShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: c.card2,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              code,
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: c.ink,
+              ),
+            ),
+          ),
+          const SizedBox(width: LTSpace.x3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formatRate(value),
+                  style: GoogleFonts.hankenGrotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: c.ink,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  _name(code),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: LTType.caption(c.ink2, size: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        'Actualizado: ${DateFormat("dd/MM/yyyy HH:mm").format(date)}',
-        style: context.textTheme.bodySmall
-            ?.copyWith(color: AppColors.textTertiary),
+// ── Header / estados ──────────────────────────────────────
+
+class _Header extends StatelessWidget {
+  const _Header({required this.eyebrow, required this.title, required this.accent});
+
+  final String eyebrow;
+  final String title;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Row(
+      children: [
+        LtPressable(
+          onTap: () => context.go('/home'),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(LTRadius.md),
+              border: Border.all(color: c.line),
+            ),
+            child: Icon(Icons.chevron_left, color: c.ink, size: 24),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(eyebrow, style: LTType.eyebrow(accent)),
+              const SizedBox(height: 2),
+              Text(title, style: LTType.display(c.ink, size: 26)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Loader extends StatelessWidget {
+  const _Loader();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+    );
+  }
+}
+
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(LTRadius.lg),
+        border: Border.all(color: c.line),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, size: 40, color: c.ink3),
+          const SizedBox(height: 12),
+          Text('No pudimos cargar las tasas.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(
+            onTap: onRetry,
+            child: Text('Reintentar', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
