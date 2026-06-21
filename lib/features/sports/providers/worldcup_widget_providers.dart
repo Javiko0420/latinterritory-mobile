@@ -22,10 +22,14 @@ const _pollInterval = Duration(seconds: 30);
 /// así deja de pollear cuando el widget del home deja de estar montado.
 class WorldcupWidgetNotifier extends AsyncNotifier<WorldcupWidget> {
   Timer? _timer;
+  bool _disposed = false;
 
   @override
   Future<WorldcupWidget> build() async {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _timer?.cancel();
+    });
     _timer?.cancel();
     _timer = Timer.periodic(_pollInterval, (_) => _refresh());
     return ref.read(worldcupWidgetRepositoryProvider).getWidget();
@@ -37,6 +41,7 @@ class WorldcupWidgetNotifier extends AsyncNotifier<WorldcupWidget> {
     final next = await AsyncValue.guard(
       () => ref.read(worldcupWidgetRepositoryProvider).getWidget(),
     );
+    if (_disposed) return; // el provider pudo disponerse durante el await
     if (next.hasError && state.hasValue) return;
     state = next;
   }
