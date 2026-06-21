@@ -151,7 +151,7 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Empleo',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -163,7 +163,7 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Empleo',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: Center(
@@ -201,7 +201,7 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
       appBar: AppBar(
         title: Text(
           'Editar Empleo',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -304,7 +304,7 @@ class _EditJobScreenState extends ConsumerState<EditJobScreen> {
 
                 Text(
                   'Información de contacto (al menos uno)',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: isDark
@@ -398,7 +398,7 @@ class _EditDropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: labelColor,

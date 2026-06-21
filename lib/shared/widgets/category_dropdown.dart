@@ -48,7 +48,7 @@ class CategoryDropdown extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: labelColor,
@@ -83,7 +83,7 @@ class CategoryDropdown extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     'No se pudieron cargar las categorías',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.hankenGrotesk(
                       fontSize: 13,
                       color: AppColors.error,
                     ),

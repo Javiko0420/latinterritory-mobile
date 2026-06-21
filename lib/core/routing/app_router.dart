@@ -31,6 +31,7 @@ import 'package:latinterritory/features/exchange/ui/exchange_screen.dart';
 import 'package:latinterritory/features/sports/ui/sports_screen.dart';
 import 'package:latinterritory/features/radio/ui/radio_screen.dart';
 import 'package:latinterritory/features/weather/ui/weather_screen.dart';
+import 'package:latinterritory/features/publish/ui/publish_screen.dart';
 import 'package:latinterritory/shared/widgets/lt_main_scaffold.dart';
 
 /// Global navigator keys — defined once, never recreated.
@@ -125,6 +126,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Publish Routes (full-screen, outside shell) ──────
+      GoRoute(
+        path: '/publish',
+        name: RouteNames.publish,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const LTPublishScreen(),
+      ),
       GoRoute(
         path: '/businesses/create',
         name: RouteNames.createBusiness,

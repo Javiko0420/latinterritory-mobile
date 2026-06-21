@@ -182,7 +182,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Evento',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -194,7 +194,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
         appBar: AppBar(
           title: Text(
             'Editar Evento',
-            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+            style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
           ),
         ),
         body: Center(
@@ -236,7 +236,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
       appBar: AppBar(
         title: Text(
           'Editar Evento',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -295,7 +295,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
                 // ── Fecha y hora ────────────────────────
                 Text(
                   'Fecha y hora del evento',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: labelColor,
@@ -362,7 +362,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
                 // ── Imagen ───────────────────────────────
                 Text(
                   'Imagen del evento (opcional)',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: labelColor,
@@ -449,7 +449,7 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
                       _existingImageUrl == null
                           ? 'Agregar imagen'
                           : 'Cambiar imagen',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.hankenGrotesk(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),

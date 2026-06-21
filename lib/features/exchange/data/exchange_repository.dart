@@ -16,6 +16,17 @@ class ExchangeRepository {
         response.data['data'] as Map<String, dynamic>);
   }
 
+  /// Todas las tasas para [base] (sin filtro `popular`). Necesario para mostrar
+  /// monedas que el set "popular" del backend omite (p.ej. COP con base AUD).
+  Future<ExchangeRatesData> getRates({required String base}) async {
+    final response = await _dio.get(
+      ApiEndpoints.exchangeRates,
+      queryParameters: {'base': base},
+    );
+    return ExchangeRatesData.fromJson(
+        response.data['data'] as Map<String, dynamic>);
+  }
+
   Future<ConversionData> convert({
     required String base,
     required String target,

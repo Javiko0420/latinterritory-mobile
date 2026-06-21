@@ -26,6 +26,7 @@ class RouteNames {
   static const String changePassword = 'change-password';
 
   // ── Publish ─────────────────────────────────────────────
+  static const String publish = 'publish';
   static const String createBusiness = 'createBusiness';
   static const String createEvent = 'createEvent';
   static const String createJob = 'createJob';

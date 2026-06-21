@@ -21,6 +21,13 @@ final popularRatesProvider = FutureProvider<ExchangeRatesData>((ref) async {
   return ref.watch(exchangeRepositoryProvider).getPopularRates(base: 'COP');
 });
 
+// ── Tasas base AUD — usado por el mini-widget y LTRatesScreen ──────────────
+// 1 AUD → COP / MXN / ARS … (audiencia latina en Australia). Usa el endpoint
+// completo (sin `popular`) porque el set "popular" del backend omite COP en AUD.
+final audRatesProvider = FutureProvider<ExchangeRatesData>((ref) async {
+  return ref.watch(exchangeRepositoryProvider).getRates(base: 'AUD');
+});
+
 // ── Converter state ───────────────────────────────────────
 
 class ExchangeConverterState {

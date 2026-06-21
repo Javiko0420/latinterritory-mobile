@@ -51,15 +51,15 @@ class _MyPublicationsScreenState
       appBar: AppBar(
         title: Text(
           'Mis Publicaciones',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w700),
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelStyle: GoogleFonts.spaceGrotesk(
+          labelStyle: GoogleFonts.hankenGrotesk(
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
-          unselectedLabelStyle: GoogleFonts.dmSans(fontSize: 13),
+          unselectedLabelStyle: GoogleFonts.hankenGrotesk(fontSize: 13),
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
           unselectedLabelColor:
@@ -412,7 +412,7 @@ class _PublicationCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -423,7 +423,7 @@ class _PublicationCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.hankenGrotesk(
                     fontSize: 12,
                     color: subtitleColor,
                   ),
@@ -434,7 +434,7 @@ class _PublicationCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     dateLabel,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.hankenGrotesk(
                       fontSize: 11,
                       color: isDark
                           ? AppColors.darkTextTertiary
@@ -532,7 +532,7 @@ class _EmptyBody extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.hankenGrotesk(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
@@ -563,7 +563,7 @@ class _ErrorBody extends StatelessWidget {
           const SizedBox(height: AppDimensions.md),
           Text(
             'No se pudo cargar tus publicaciones.',
-            style: GoogleFonts.dmSans(color: AppColors.textSecondary),
+            style: GoogleFonts.hankenGrotesk(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppDimensions.lg),
           TextButton.icon(

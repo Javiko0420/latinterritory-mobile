@@ -145,7 +145,7 @@ class _PlayerCard extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     state.currentStation.name,
-                                    style: GoogleFonts.spaceGrotesk(
+                                    style: GoogleFonts.hankenGrotesk(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 13,
                                       color: Colors.white,
@@ -169,7 +169,7 @@ class _PlayerCard extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     '${state.currentStation.frequency} · ${state.currentStation.genre}',
-                                    style: GoogleFonts.dmSans(
+                                    style: GoogleFonts.hankenGrotesk(
                                       fontSize: 11,
                                       color: Colors.white.withValues(alpha: 0.7),
                                     ),

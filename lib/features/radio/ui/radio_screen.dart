@@ -2,32 +2,32 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
-import 'package:latinterritory/core/constants/app_dimensions.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/radio/data/models/radio_models.dart';
 import 'package:latinterritory/features/radio/providers/radio_player_provider.dart';
 import 'package:latinterritory/features/radio/providers/radio_providers.dart';
 import 'package:latinterritory/shared/extensions/context_extensions.dart';
+import 'package:latinterritory/shared/widgets/lt_pressable.dart';
+import 'package:latinterritory/shared/widgets/lt_screen_in.dart';
 
-// ── Países disponibles ────────────────────────────────────
-
+// ── Países disponibles (sin emoji; código + etiqueta) ─────
 class _Country {
-  const _Country(this.code, this.label, this.flag);
+  const _Country(this.code, this.label);
   final String code;
   final String label;
-  final String flag;
 }
 
 const _countries = [
-  _Country('CO', 'Colombia', '🇨🇴'),
-  _Country('AU', 'Australia', '🇦🇺'),
-  _Country('MX', 'México', '🇲🇽'),
-  _Country('AR', 'Argentina', '🇦🇷'),
-  _Country('ES', 'España', '🇪🇸'),
+  _Country('CO', 'Colombia'),
+  _Country('AU', 'Australia'),
+  _Country('MX', 'México'),
+  _Country('AR', 'Argentina'),
+  _Country('ES', 'España'),
 ];
-
-// ── Pantalla ──────────────────────────────────────────────
 
 class RadioScreen extends ConsumerStatefulWidget {
   const RadioScreen({super.key});
@@ -45,19 +45,8 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
     super.dispose();
   }
 
-  void _onSearchChanged(String value) {
-    ref.read(radioSearchQueryProvider.notifier).update(value);
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    ref.read(radioSearchQueryProvider.notifier).clear();
-  }
-
-  Future<void> _playStation(
-    RadioStation station,
-    List<RadioStation> contextStations,
-  ) async {
+  // ── Lógica del player intacta ───────────────────────────
+  Future<void> _playStation(RadioStation station, List<RadioStation> contextStations) async {
     try {
       await ref.read(radioPlayerProvider.notifier).playApiStation(
             station,
@@ -65,16 +54,11 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
             contextStations: contextStations,
           );
     } catch (e) {
-      // Log del error real para facilitar debugging
       debugPrint('[Radio] Error al reproducir "${station.name}": $e');
       debugPrint('[Radio] URL: ${station.streamUrl}');
-
       ref.read(isPlayingProvider.notifier).set(false);
       if (mounted) {
-        // En debug muestra el error técnico; en release mensaje amigable
-        final msg = kDebugMode
-            ? 'Error: $e'
-            : 'No se pudo conectar a la emisora. Intenta con otra.';
+        final msg = kDebugMode ? 'Error: $e' : 'No se pudo conectar a la emisora. Intenta con otra.';
         context.showErrorSnackBar(msg);
       }
     }
@@ -82,141 +66,140 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.lt;
     final query = ref.watch(radioSearchQueryProvider);
     final isSearching = query.trim().isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: LtScreenIn(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(LTSpace.screenH, LTSpace.x4, LTSpace.screenH, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        LtPressable(
+                          onTap: () => context.go('/home'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(LTRadius.md), border: Border.all(color: c.line)),
+                            child: Icon(Icons.chevron_left, color: c.ink, size: 24),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('EN VIVO', style: LTType.eyebrow(c.coral)),
+                              const SizedBox(height: 2),
+                              Text('Radio', style: LTType.display(c.ink, size: 26)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: LTSpace.x4),
+                    _SearchField(
+                      controller: _searchController,
+                      onChanged: (v) => ref.read(radioSearchQueryProvider.notifier).update(v),
+                      onClear: () {
+                        _searchController.clear();
+                        ref.read(radioSearchQueryProvider.notifier).clear();
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+                ),
               ),
-              child: const Icon(
-                Icons.radio,
-                color: AppColors.primary,
-                size: 20,
+              if (!isSearching) _CountryChips(),
+              const SizedBox(height: 4),
+              Expanded(
+                child: isSearching ? _SearchResults(onTap: _playStation) : _PopularStations(onTap: _playStation),
               ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Radio en Vivo',
-              style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          // ── Barra de búsqueda ─────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Buscar emisoras...',
-                hintStyle: GoogleFonts.dmSans(
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.textTertiary,
-                ),
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                filled: true,
-                fillColor: isDark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.surfaceVariant,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
-                  borderSide:
-                      const BorderSide(color: AppColors.primary, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // ── Chips de países ───────────────────────────
-          if (!isSearching) _CountryChips(),
-
-          const SizedBox(height: 4),
-
-          // ── Lista de estaciones ───────────────────────
-          Expanded(
-            child: isSearching
-                ? _SearchResults(onTap: _playStation)
-                : _PopularStations(onTap: _playStation),
-          ),
-        ],
       ),
     );
   }
 }
 
-// ── Chips de países ───────────────────────────────────────
+// ── Search field ──────────────────────────────────────────
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged, required this.onClear});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      style: LTType.body(c.ink),
+      decoration: InputDecoration(
+        hintText: 'Buscar emisoras',
+        hintStyle: LTType.body(c.ink3),
+        prefixIcon: Icon(Icons.search, color: c.ink3, size: 20),
+        suffixIcon: controller.text.isNotEmpty ? IconButton(icon: Icon(Icons.close, color: c.ink3, size: 18), onPressed: onClear) : null,
+        filled: true,
+        fillColor: c.card,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(LTRadius.md), borderSide: BorderSide(color: c.gold, width: 1.5)),
+      ),
+    );
+  }
+}
+
+// ── Country chips ─────────────────────────────────────────
 
 class _CountryChips extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final selected = ref.watch(selectedCountryProvider);
     return SizedBox(
-      height: 40,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: LTSpace.screenH),
         itemCount: _countries.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
-          final c = _countries[i];
-          final isSelected = c.code == selected;
-          return FilterChip(
-            label: Text(
-              '${c.flag} ${c.label}',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+          final country = _countries[i];
+          final isSel = country.code == selected;
+          return LtPressable(
+            onTap: () => ref.read(selectedCountryProvider.notifier).select(country.code),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSel ? c.coral : c.card,
+                borderRadius: BorderRadius.circular(LTRadius.pill),
+                border: Border.all(color: isSel ? c.coral : c.line),
+              ),
+              child: Text(
+                country.label,
+                style: GoogleFonts.hankenGrotesk(fontSize: 13, fontWeight: FontWeight.w700, color: isSel ? Colors.white : c.ink2),
               ),
             ),
-            selected: isSelected,
-            onSelected: (_) =>
-                ref.read(selectedCountryProvider.notifier).select(c.code),
-            selectedColor: AppColors.primary,
-            backgroundColor:
-                Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.surfaceVariant,
-            showCheckmark: false,
-            side: BorderSide.none,
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(AppDimensions.radiusFull),
-            ),
-            visualDensity: VisualDensity.compact,
           );
         },
       ),
@@ -224,7 +207,7 @@ class _CountryChips extends ConsumerWidget {
   }
 }
 
-// ── Estaciones populares ──────────────────────────────────
+// ── Listas ────────────────────────────────────────────────
 
 class _PopularStations extends ConsumerWidget {
   const _PopularStations({required this.onTap});
@@ -232,20 +215,15 @@ class _PopularStations extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final async = ref.watch(popularStationsProvider);
-
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorState(
-        onRetry: () => ref.invalidate(popularStationsProvider),
-      ),
+      loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+      error: (_, __) => _ErrorState(onRetry: () => ref.invalidate(popularStationsProvider)),
       data: (stations) {
-        if (stations.isEmpty) {
-          return const _EmptyState(
-            message: 'No hay emisoras disponibles para este país.',
-          );
-        }
+        if (stations.isEmpty) return const _EmptyState(message: 'No hay emisoras para este país.');
         return RefreshIndicator(
+          color: c.gold,
           onRefresh: () async => ref.invalidate(popularStationsProvider),
           child: _StationGrid(stations: stations, onTap: onTap),
         );
@@ -254,34 +232,24 @@ class _PopularStations extends ConsumerWidget {
   }
 }
 
-// ── Resultados de búsqueda ────────────────────────────────
-
 class _SearchResults extends ConsumerWidget {
   const _SearchResults({required this.onTap});
   final Future<void> Function(RadioStation, List<RadioStation>) onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.lt;
     final async = ref.watch(searchStationsProvider);
-
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorState(
-        onRetry: () => ref.invalidate(searchStationsProvider),
-      ),
+      loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: c.gold)),
+      error: (_, __) => _ErrorState(onRetry: () => ref.invalidate(searchStationsProvider)),
       data: (stations) {
-        if (stations.isEmpty) {
-          return const _EmptyState(
-            message: 'No se encontraron emisoras.\nIntenta con otro término.',
-          );
-        }
+        if (stations.isEmpty) return const _EmptyState(message: 'No se encontraron emisoras.\nIntenta con otro término.');
         return _StationGrid(stations: stations, onTap: onTap);
       },
     );
   }
 }
-
-// ── Grid de estaciones ────────────────────────────────────
 
 class _StationGrid extends ConsumerWidget {
   const _StationGrid({required this.stations, required this.onTap});
@@ -291,10 +259,8 @@ class _StationGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(currentStationProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: const EdgeInsets.fromLTRB(LTSpace.screenH, 10, LTSpace.screenH, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
@@ -304,11 +270,9 @@ class _StationGrid extends ConsumerWidget {
       itemCount: stations.length,
       itemBuilder: (context, i) {
         final station = stations[i];
-        final isPlaying = current?.id == station.id;
         return _StationCard(
           station: station,
-          isPlaying: isPlaying,
-          isDark: isDark,
+          playing: current?.id == station.id,
           onTap: () => onTap(station, stations),
         );
       },
@@ -316,129 +280,71 @@ class _StationGrid extends ConsumerWidget {
   }
 }
 
-// ── Card de estación ──────────────────────────────────────
-
-class _StationCard extends ConsumerWidget {
-  const _StationCard({
-    required this.station,
-    required this.isPlaying,
-    required this.isDark,
-    required this.onTap,
-  });
+class _StationCard extends StatelessWidget {
+  const _StationCard({required this.station, required this.playing, required this.onTap});
 
   final RadioStation station;
-  final bool isPlaying;
-  final bool isDark;
+  final bool playing;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final surface = isDark ? AppColors.darkSurface : AppColors.surface;
-    final borderColor = isPlaying
-        ? AppColors.primary
-        : isDark
-            ? AppColors.darkBorder
-            : AppColors.border;
-
-    return InkWell(
+  Widget build(BuildContext context) {
+    final c = context.lt;
+    return LtPressable(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          border: Border.all(
-            color: borderColor,
-            width: isPlaying ? 2 : 1,
-          ),
-          boxShadow: isPlaying
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.18),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
+        duration: LTMotion.press,
         padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(LTRadius.lg),
+          border: Border.all(color: playing ? c.coral : c.line, width: playing ? 2 : 1),
+          boxShadow: playing
+              ? [BoxShadow(color: c.coral.withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 5))]
+              : c.softShadow,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Logo ────────────────────────────────────
             Stack(
               alignment: Alignment.bottomRight,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: station.logoUrl != null &&
-                          station.logoUrl!.isNotEmpty
+                  borderRadius: BorderRadius.circular(14),
+                  child: (station.logoUrl != null && station.logoUrl!.isNotEmpty)
                       ? CachedNetworkImage(
                           imageUrl: station.logoUrl!,
                           width: 64,
                           height: 64,
                           fit: BoxFit.cover,
-                          errorWidget: (context, error, _) =>
-                              _StationLogoPlaceholder(isDark: isDark),
+                          errorWidget: (_, __, ___) => _logoPh(c),
                         )
-                      : _StationLogoPlaceholder(isDark: isDark),
+                      : _logoPh(c),
                 ),
-                if (isPlaying)
+                if (playing)
                   Container(
                     padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.graphic_eq,
-                      color: Colors.white,
-                      size: 12,
-                    ),
+                    decoration: BoxDecoration(color: c.coral, shape: BoxShape.circle),
+                    child: const Icon(Icons.graphic_eq, color: Colors.white, size: 12),
                   ),
               ],
             ),
             const SizedBox(height: 10),
-
-            // ── Nombre ───────────────────────────────────
             Text(
               station.name,
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isPlaying
-                    ? AppColors.primary
-                    : isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
-              ),
+              style: GoogleFonts.hankenGrotesk(fontSize: 12.5, fontWeight: FontWeight.w800, color: playing ? c.coral : c.ink),
             ),
-            const SizedBox(height: 4),
-
-            // ── País + codec ─────────────────────────────
+            const SizedBox(height: 3),
             if (station.country != null || station.codec != null)
               Text(
-                [
-                  if (station.country != null) station.country!,
-                  if (station.codec != null) station.codec!.toUpperCase(),
-                ].join(' · '),
+                [if (station.country != null) station.country!, if (station.codec != null) station.codec!.toUpperCase()].join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  fontSize: 10,
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.textTertiary,
-                ),
+                style: LTType.caption(c.ink3, size: 10.5),
               ),
-
             const Spacer(),
-
-            // ── Tags ─────────────────────────────────────
             if (station.tags.isNotEmpty)
               Wrap(
                 alignment: WrapAlignment.center,
@@ -446,21 +352,9 @@ class _StationCard extends ConsumerWidget {
                 runSpacing: 4,
                 children: station.tags.take(2).map((tag) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusFull),
-                    ),
-                    child: Text(
-                      tag,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 9,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: c.coralSoft, borderRadius: BorderRadius.circular(LTRadius.pill)),
+                    child: Text(tag, style: GoogleFonts.hankenGrotesk(fontSize: 9.5, fontWeight: FontWeight.w700, color: c.coral)),
                   );
                 }).toList(),
               ),
@@ -469,33 +363,16 @@ class _StationCard extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _logoPh(LTColors c) => Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(color: c.card2, borderRadius: BorderRadius.circular(14)),
+        child: Icon(Icons.radio, size: 28, color: c.ink3),
+      );
 }
 
-class _StationLogoPlaceholder extends StatelessWidget {
-  const _StationLogoPlaceholder({required this.isDark});
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkSurfaceVariant
-            : AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(
-        Icons.radio,
-        size: 28,
-        color: isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
-      ),
-    );
-  }
-}
-
-// ── Estados vacío y error ─────────────────────────────────
+// ── Estados ───────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.message});
@@ -503,29 +380,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.lt;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.radio_outlined,
-            size: 64,
-            color: isDark
-                ? AppColors.darkTextTertiary
-                : AppColors.textTertiary,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(color: c.coralSoft, borderRadius: BorderRadius.circular(LTRadius.lg)),
+            child: Icon(Icons.radio_outlined, size: 30, color: c.coral),
           ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
+          const SizedBox(height: 14),
+          Text(message, textAlign: TextAlign.center, style: LTType.body(c.ink2)),
         ],
       ),
     );
@@ -538,23 +405,16 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.lt;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off, size: 48, color: AppColors.textTertiary),
+          Icon(Icons.wifi_off, size: 40, color: c.ink3),
           const SizedBox(height: 12),
-          Text(
-            'Error al cargar las emisoras.',
-            style: GoogleFonts.dmSans(
-                fontSize: 14, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Reintentar'),
-          ),
+          Text('Error al cargar las emisoras.', style: LTType.body(c.ink2)),
+          const SizedBox(height: 10),
+          LtPressable(onTap: onRetry, child: Text('Reintentar', style: LTType.caption(c.gold, size: 14, weight: FontWeight.w700))),
         ],
       ),
     );

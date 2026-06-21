@@ -50,39 +50,41 @@ class LtButton extends StatelessWidget {
 
     final effectiveOnPressed = isLoading ? null : onPressed;
 
-    final labelStyle = GoogleFonts.spaceGrotesk(
+    // Gold-filled CTA with dark ink label (matches the mockup's "Publicar
+    // ahora" button). Bright gold in both themes, dark text for contrast.
+    final goldFill = isDark ? AppColors.goldStrongDark : AppColors.goldStrong;
+    const onGold = Color(0xFF1A1408);
+
+    final labelStyle = GoogleFonts.hankenGrotesk(
       fontSize: 16,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w800,
       letterSpacing: 0.2,
     );
 
     final filledShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
     );
 
     switch (variant) {
       case LtButtonVariant.filled:
         return DecoratedBox(
-          decoration: isDark
-              ? const BoxDecoration()
-              : BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusMd),
-                  boxShadow: onPressed == null
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+            boxShadow: onPressed == null
+                ? null
+                : [
+                    BoxShadow(
+                      color: goldFill.withValues(alpha: isDark ? 0.32 : 0.42),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+          ),
           child: ElevatedButton(
             onPressed: effectiveOnPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: goldFill,
+              foregroundColor: onGold,
               minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
               shape: filledShape,
               textStyle: labelStyle,
