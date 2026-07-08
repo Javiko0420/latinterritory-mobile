@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latinterritory/core/extensions/async_value_extensions.dart';
 import 'package:latinterritory/core/i18n/tr.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/core/theme/lt_colors.dart';
@@ -23,7 +22,7 @@ class LTForumWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.lt;
-    final forums = ref.watch(forumsProvider).valueOrNull ?? const <Forum>[];
+    final forums = ref.watch(forumsProvider).value ?? const <Forum>[];
     final active = forums.where((f) => f.isActive).toList();
     if (active.isEmpty) return const SizedBox.shrink();
     final forum = active.first;

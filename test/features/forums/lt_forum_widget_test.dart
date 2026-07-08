@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:latinterritory/core/extensions/async_value_extensions.dart';
 import 'package:latinterritory/core/theme/lt_colors.dart';
 import 'package:latinterritory/features/forums/data/models/forum_models.dart';
 import 'package:latinterritory/features/forums/providers/forum_providers.dart';
 import 'package:latinterritory/features/forums/ui/lt_forum_widget.dart';
-import 'package:riverpod/src/framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Forum _forum({bool isActive = true}) => Forum(
