@@ -94,10 +94,11 @@ Claves nuevas en `lib/core/i18n/app_translations.dart`, en español e inglés:
 | `home.see_forums` | Ver foros | See forums |
 | `home.forum_topic_of_day` | Tema del día | Topic of the day |
 | `home.forum_join` | Participar | Join in |
-| `home.forum_posts_label` | posts | posts |
 
-Nota: `tr()` no soporta interpolación (recibe solo la clave), así que el contador
-se construye por concatenación: `'${forum.postsCount} ${tr(ref, 'home.forum_posts_label')}'`.
+Para la etiqueta del contador se **reusa la clave existente** `forums.posts`
+('posts' en es y en). `tr()` no soporta interpolación (recibe solo la clave),
+así que el contador se construye por concatenación:
+`'${forum.postsCount} ${tr(ref, 'forums.posts')}'`.
 
 ## Testing
 
