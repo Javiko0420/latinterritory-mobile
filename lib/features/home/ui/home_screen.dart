@@ -11,6 +11,7 @@ import 'package:latinterritory/features/auth/providers/auth_provider.dart';
 import 'package:latinterritory/features/businesses/providers/business_providers.dart';
 import 'package:latinterritory/features/events/providers/event_providers.dart';
 import 'package:latinterritory/features/exchange/ui/lt_exchange_rate_widget.dart';
+import 'package:latinterritory/features/forums/ui/lt_forum_widget.dart';
 import 'package:latinterritory/features/jobs/providers/job_providers.dart';
 import 'package:latinterritory/features/sports/ui/lt_sports_widget.dart';
 import 'package:latinterritory/features/weather/ui/lt_weather_widget.dart';
@@ -150,6 +151,9 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               const _EventsFeatured(),
               const SizedBox(height: 24),
+
+              // ── Foro del día ────────────────────────────────
+              const LTForumWidget(),
 
               // ── Radio ───────────────────────────────────────
               const _RadioCard(),
