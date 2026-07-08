@@ -34,18 +34,22 @@ class _LtPressableState extends State<LtPressable> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: widget.behavior,
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      onTapDown: (_) => _set(true),
-      onTapUp: (_) => _set(false),
-      onTapCancel: () => _set(false),
-      child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1.0,
-        duration: LTMotion.press,
-        curve: Curves.easeOut,
-        child: widget.child,
+    final tappable = widget.onTap != null || widget.onLongPress != null;
+    return Semantics(
+      button: tappable,
+      child: GestureDetector(
+        behavior: widget.behavior,
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        onTapDown: (_) => _set(true),
+        onTapUp: (_) => _set(false),
+        onTapCancel: () => _set(false),
+        child: AnimatedScale(
+          scale: _pressed ? widget.pressedScale : 1.0,
+          duration: LTMotion.press,
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
       ),
     );
   }

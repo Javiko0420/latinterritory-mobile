@@ -38,6 +38,7 @@ class LTLight {
   static const coralSoft = Color(0xFFF6E2DB);
   static const green     = Color(0xFF3F7F61);
   static const greenSoft = Color(0xFFE2EDE6);
+  static const onGreen   = Color(0xFFFFFFFF); // texto sobre relleno green (4.75:1)
   static const tabbar    = Color(0xDBFFFFFF); // blanco 86%
   static const shadow1   = Color(0x0F282114); // blur 22, offset (0,4)
   static const shadow2   = Color(0x0D282114); // blur 3,  offset (0,1)
@@ -62,6 +63,7 @@ class LTDark {
   static const coralSoft = Color(0xFF2E211C);
   static const green     = Color(0xFF5FA07E);
   static const greenSoft = Color(0xFF18261F);
+  static const onGreen   = Color(0xFF18261F); // texto sobre relleno green (5.1:1)
   static const tabbar    = Color(0xD11B1F26); // card 82%
   static const shadow1   = Color(0x73000000); // blur 26, offset (0,6)
   static const shadow2   = Color(0x40000000); // blur 2,  offset (0,1)
@@ -72,7 +74,7 @@ class LTDark {
 @immutable
 class LTColors extends ThemeExtension<LTColors> {
   final Color bg, card, card2, ink, ink2, ink3, line, tabbar;
-  final Color gold, goldText, goldBg, blue, blueSoft, coral, coralSoft, green, greenSoft;
+  final Color gold, goldText, goldBg, blue, blueSoft, coral, coralSoft, green, greenSoft, onGreen;
   final List<BoxShadow> softShadow;
 
   const LTColors({
@@ -93,6 +95,7 @@ class LTColors extends ThemeExtension<LTColors> {
     required this.coralSoft,
     required this.green,
     required this.greenSoft,
+    required this.onGreen,
     required this.softShadow,
   });
 
@@ -104,7 +107,7 @@ class LTColors extends ThemeExtension<LTColors> {
     ink: LTLight.ink, ink2: LTLight.ink2, ink3: LTLight.ink3, line: LTLight.line,
     tabbar: LTLight.tabbar, gold: LTLight.gold, goldText: LTLight.goldText, goldBg: LTLight.goldBg,
     blue: LTLight.blue, blueSoft: LTLight.blueSoft, coral: LTLight.coral, coralSoft: LTLight.coralSoft,
-    green: LTLight.green, greenSoft: LTLight.greenSoft,
+    green: LTLight.green, greenSoft: LTLight.greenSoft, onGreen: LTLight.onGreen,
     softShadow: [
       BoxShadow(color: LTLight.shadow1, blurRadius: 22, offset: Offset(0, 4)),
       BoxShadow(color: LTLight.shadow2, blurRadius: 3, offset: Offset(0, 1)),
@@ -116,7 +119,7 @@ class LTColors extends ThemeExtension<LTColors> {
     ink: LTDark.ink, ink2: LTDark.ink2, ink3: LTDark.ink3, line: LTDark.line,
     tabbar: LTDark.tabbar, gold: LTDark.gold, goldText: LTDark.goldText, goldBg: LTDark.goldBg,
     blue: LTDark.blue, blueSoft: LTDark.blueSoft, coral: LTDark.coral, coralSoft: LTDark.coralSoft,
-    green: LTDark.green, greenSoft: LTDark.greenSoft,
+    green: LTDark.green, greenSoft: LTDark.greenSoft, onGreen: LTDark.onGreen,
     softShadow: [
       BoxShadow(color: LTDark.shadow1, blurRadius: 26, offset: Offset(0, 6)),
       BoxShadow(color: LTDark.shadow2, blurRadius: 2, offset: Offset(0, 1)),
@@ -128,7 +131,7 @@ class LTColors extends ThemeExtension<LTColors> {
     Color? bg, Color? card, Color? card2, Color? ink, Color? ink2, Color? ink3,
     Color? line, Color? tabbar, Color? gold, Color? goldText, Color? goldBg,
     Color? blue, Color? blueSoft, Color? coral, Color? coralSoft, Color? green,
-    Color? greenSoft, List<BoxShadow>? softShadow,
+    Color? greenSoft, Color? onGreen, List<BoxShadow>? softShadow,
   }) {
     return LTColors(
       bg: bg ?? this.bg,
@@ -148,6 +151,7 @@ class LTColors extends ThemeExtension<LTColors> {
       coralSoft: coralSoft ?? this.coralSoft,
       green: green ?? this.green,
       greenSoft: greenSoft ?? this.greenSoft,
+      onGreen: onGreen ?? this.onGreen,
       softShadow: softShadow ?? this.softShadow,
     );
   }
@@ -175,6 +179,7 @@ class LTColors extends ThemeExtension<LTColors> {
       coralSoft: c(coralSoft, other.coralSoft),
       green: c(green, other.green),
       greenSoft: c(greenSoft, other.greenSoft),
+      onGreen: c(onGreen, other.onGreen),
       softShadow: t < 0.5 ? softShadow : other.softShadow,
     );
   }
