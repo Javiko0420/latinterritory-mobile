@@ -55,6 +55,8 @@ void main() {
               expiry: any(named: 'expiry'),
             )).thenAnswer((_) async {});
 
+        when(() => mockStorage.saveUser(any())).thenAnswer((_) async {});
+
         // Act
         final result = await repository.login(
           const LoginRequest(
@@ -71,6 +73,7 @@ void main() {
               accessToken: 'test-access-token',
               refreshToken: 'test-refresh-token',
             )).called(1);
+        verify(() => mockStorage.saveUser(any())).called(1);
       });
     });
 
