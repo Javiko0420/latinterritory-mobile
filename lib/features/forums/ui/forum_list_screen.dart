@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latinterritory/core/i18n/tr.dart';
 import 'package:latinterritory/core/routing/route_names.dart';
 import 'package:latinterritory/core/theme/lt_colors.dart';
 import 'package:latinterritory/core/theme/lt_tokens.dart';
@@ -111,13 +112,13 @@ class _CommunityBanner extends StatelessWidget {
   }
 }
 
-class _ForumCard extends StatelessWidget {
+class _ForumCard extends ConsumerWidget {
   const _ForumCard({required this.forum});
 
   final Forum forum;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.lt;
     return LtPressable(
       onTap: () => context.pushNamed(RouteNames.forumDetail, pathParameters: {'id': forum.id}, extra: forum),
@@ -160,7 +161,7 @@ class _ForumCard extends StatelessWidget {
               children: [
                 Icon(Icons.chat_bubble_outline, size: 14, color: c.ink3),
                 const SizedBox(width: 5),
-                Text('${forum.postsCount} publicaciones', style: LTType.caption(c.ink3, size: 12)),
+                Text('${forum.postsCount} ${tr(ref, 'forums.posts')}', style: LTType.caption(c.ink3, size: 12)),
                 const Spacer(),
                 Icon(Icons.chevron_right, size: 20, color: c.ink3),
               ],

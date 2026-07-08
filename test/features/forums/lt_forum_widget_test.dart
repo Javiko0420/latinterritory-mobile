@@ -9,10 +9,14 @@ import 'package:latinterritory/features/forums/providers/forum_providers.dart';
 import 'package:latinterritory/features/forums/ui/lt_forum_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Forum _forum({bool isActive = true}) => Forum(
+Forum _forum({
+  bool isActive = true,
+  String description = 'Comparte tu experiencia con la comunidad',
+}) =>
+    Forum(
       id: 'f1',
       name: 'Vivienda sin historial crediticio',
-      description: 'Comparte tu experiencia con la comunidad',
+      description: description,
       slug: 'vivienda',
       topic: 'housing',
       startDate: DateTime(2026, 7, 8),
@@ -83,5 +87,42 @@ void main() {
     await tester.pump();
 
     expect(find.text('Foro del día'), findsNothing);
+  });
+
+  testWidgets('con descripción vacía no renderiza el Text de descripción',
+      (tester) async {
+    await tester.pumpWidget(_app([
+      forumsProvider.overrideWith((ref) async => [_forum(description: '  ')]),
+    ]));
+    await tester.pump();
+
+    // La card se muestra, pero sin línea en blanco de descripción.
+    expect(find.text('Vivienda sin historial crediticio'), findsOneWidget);
+    expect(find.text('  '), findsNothing);
+  });
+
+  testWidgets('el footer no desborda con text scale de accesibilidad',
+      (tester) async {
+    tester.view.physicalSize = const Size(300, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        forumsProvider.overrideWith((ref) async => [_forum()]),
+      ],
+      child: MaterialApp(
+        theme: ThemeData(extensions: const [LTColors.light]),
+        home: const MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(1.4)),
+          child: Scaffold(
+            body: SingleChildScrollView(child: LTForumWidget()),
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }

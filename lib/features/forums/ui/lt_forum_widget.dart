@@ -104,19 +104,25 @@ class _ForumCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              forum.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: LTType.caption(c.ink2, size: 13),
-            ),
+            if (forum.description.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                forum.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: LTType.caption(c.ink2, size: 13),
+              ),
+            ],
             const SizedBox(height: 14),
             Row(
               children: [
-                Text(
-                  '${forum.postsCount} ${tr(ref, 'forums.posts')}',
-                  style: LTType.caption(c.ink2, size: 13, weight: FontWeight.w600),
+                Flexible(
+                  child: Text(
+                    '${forum.postsCount} ${tr(ref, 'forums.posts')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: LTType.caption(c.ink2, size: 13, weight: FontWeight.w600),
+                  ),
                 ),
                 const Spacer(),
                 Container(
@@ -132,14 +138,13 @@ class _ForumCard extends ConsumerWidget {
                       Text(
                         tr(ref, 'home.forum_join'),
                         style: LTType.caption(
-                          Colors.white,
+                          c.onGreen,
                           size: 13,
                           weight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.arrow_forward,
-                          size: 14, color: Colors.white),
+                      Icon(Icons.arrow_forward, size: 14, color: c.onGreen),
                     ],
                   ),
                 ),
