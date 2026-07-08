@@ -64,3 +64,6 @@ coverage/
 
 # SDD scratch (ledger de progreso)
 .superpowers/
+
+# Claude Code local config
+.claude/
