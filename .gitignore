@@ -61,3 +61,6 @@ android/key.properties
 
 # Coverage
 coverage/
+
+# SDD scratch (ledger de progreso)
+.superpowers/
