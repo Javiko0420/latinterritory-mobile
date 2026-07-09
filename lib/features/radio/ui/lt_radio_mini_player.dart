@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/radio/providers/radio_player_provider.dart';
 import 'package:latinterritory/features/radio/ui/lt_radio_station_list.dart';
-import 'package:latinterritory/shared/widgets/lt_andean_pattern.dart';
 import 'package:latinterritory/shared/widgets/lt_eq_bars.dart';
 
 const double kPlayerWidth = 300.0;
@@ -11,6 +14,9 @@ const double kPlayerHeight = 72.0;
 const double kFabSize = 52.0;
 const double kNavBarMargin = 96.0;
 const double kTopSafeArea = 50.0;
+
+// Segundo stop del gradiente coral, igual al de la card de radio del Home.
+const Color _kCoralDeep = Color(0xFFA8442F);
 
 /// Floating draggable radio mini player rendered in the app overlay.
 class LtRadioMiniPlayer extends ConsumerWidget {
@@ -81,38 +87,21 @@ class _PlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: kPlayerWidth,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFBB4F25), Color(0xFFE07830), Color(0xFFE38D18)],
-          stops: [0.0, 0.6, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFE07830).withValues(alpha: 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+    final c = context.lt;
+    // Glass pill: mismo idioma que el bottom nav (chrome flotante).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(LTRadius.lg),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          width: kPlayerWidth,
+          decoration: BoxDecoration(
+            color: c.tabbar,
+            borderRadius: BorderRadius.circular(LTRadius.lg),
+            border: Border.all(color: c.line),
+            boxShadow: c.softShadow,
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: CustomPaint(
-                painter: AndeanPatternPainter(
-                  color: const Color(0xFFFAF7F1),
-                  opacity: 0.10,
-                ),
-              ),
-            ),
-          ),
-          Column(
+          child: Column(
             children: [
               Center(
                 child: Container(
@@ -120,7 +109,7 @@ class _PlayerCard extends StatelessWidget {
                   width: 32,
                   height: 3,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: c.ink3.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -145,11 +134,7 @@ class _PlayerCard extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     state.currentStation.name,
-                                    style: GoogleFonts.hankenGrotesk(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: Colors.white,
-                                    ),
+                                    style: LTType.card(c.ink, size: 13.5),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -157,22 +142,19 @@ class _PlayerCard extends StatelessWidget {
                                 Icon(
                                   Icons.keyboard_arrow_down,
                                   size: 14,
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: c.ink3,
                                 ),
                               ],
                             ),
                             const SizedBox(height: 3),
                             Row(
                               children: [
-                                if (state.isPlaying) const LtEqBars(),
+                                if (state.isPlaying) LtEqBars(color: c.coral),
                                 if (state.isPlaying) const SizedBox(width: 5),
                                 Flexible(
                                   child: Text(
                                     '${state.currentStation.frequency} · ${state.currentStation.genre}',
-                                    style: GoogleFonts.hankenGrotesk(
-                                      fontSize: 11,
-                                      color: Colors.white.withValues(alpha: 0.7),
-                                    ),
+                                    style: LTType.caption(c.ink2, size: 11),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -188,7 +170,7 @@ class _PlayerCard extends StatelessWidget {
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -230,14 +212,14 @@ class _Controls extends StatelessWidget {
         _CircleBtn(
           icon: Icons.remove,
           size: 28,
-          dark: true,
+          subtle: true,
           onTap: notifier.minimize,
         ),
         const SizedBox(width: 4),
         _CircleBtn(
           icon: Icons.close,
           size: 28,
-          dark: true,
+          subtle: true,
           onTap: notifier.hide,
         ),
       ],
@@ -251,25 +233,29 @@ class _CircleBtn extends StatelessWidget {
     required this.size,
     required this.onTap,
     this.filled = false,
-    this.dark = false,
+    this.subtle = false,
   });
 
   final IconData icon;
   final double size;
+
+  /// Acción primaria (play/pause): relleno coral, ícono blanco.
   final bool filled;
-  final bool dark;
+
+  /// Acción terciaria (minimizar/cerrar): ícono atenuado.
+  final bool subtle;
+
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    Color bg;
-    if (filled) {
-      bg = Colors.white.withValues(alpha: 0.25);
-    } else if (dark) {
-      bg = Colors.black.withValues(alpha: 0.15);
-    } else {
-      bg = Colors.white.withValues(alpha: 0.15);
-    }
+    final c = context.lt;
+    final bg = filled ? c.coral : c.card2;
+    final fg = filled
+        ? Colors.white
+        : subtle
+            ? c.ink2
+            : c.ink;
 
     return Material(
       color: Colors.transparent,
@@ -282,16 +268,11 @@ class _CircleBtn extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: bg,
-            border: filled
-                ? Border.all(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    width: 1.5,
-                  )
-                : null,
+            border: subtle || filled ? null : Border.all(color: c.line),
           ),
           child: Icon(
             icon,
-            color: Colors.white,
+            color: fg,
             size: size * 0.5,
           ),
         ),
@@ -313,6 +294,7 @@ class _MinimizedFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.lt;
     return GestureDetector(
       onTap: notifier.expand,
       onPanUpdate: (details) {
@@ -339,18 +321,13 @@ class _MinimizedFab extends StatelessWidget {
             height: kFabSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE07830), Color(0xFFBB4F25)],
+              // Identidad de radio: mismo gradiente coral de la card del Home.
+              gradient: LinearGradient(
+                colors: [c.coral, _kCoralDeep],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFE07830).withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: c.softShadow,
             ),
             child: const Icon(Icons.radio, color: Colors.white, size: 24),
           ),
@@ -406,6 +383,7 @@ class _PulseAvatarState extends State<_PulseAvatar>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.lt;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -417,11 +395,8 @@ class _PulseAvatarState extends State<_PulseAvatar>
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.2),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.45),
-                width: 1.5,
-              ),
+              color: c.coralSoft,
+              border: Border.all(color: c.line, width: 1.5),
             ),
             alignment: Alignment.center,
             child: Text(widget.country, style: const TextStyle(fontSize: 20)),
@@ -460,6 +435,7 @@ class _PulseRingState extends State<_PulseRing>
 
   @override
   Widget build(BuildContext context) {
+    final coral = context.lt.coral;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
@@ -471,7 +447,7 @@ class _PulseRingState extends State<_PulseRing>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFFE07830).withValues(alpha: opacity * 0.6),
+                color: coral.withValues(alpha: opacity * 0.6),
                 width: 2,
               ),
             ),

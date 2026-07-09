@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:latinterritory/core/constants/app_colors.dart';
+import 'package:latinterritory/core/theme/lt_colors.dart';
+import 'package:latinterritory/core/theme/lt_tokens.dart';
+import 'package:latinterritory/core/theme/lt_typography.dart';
 import 'package:latinterritory/features/radio/providers/radio_player_provider.dart';
 
 void showStationSheet(
   BuildContext context,
   RadioPlayerNotifier notifier,
 ) {
+  final c = context.lt;
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
+    backgroundColor: c.card,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(LTRadius.lg)),
     ),
     builder: (ctx) => Consumer(
       builder: (_, ref, __) {
+        final c = ctx.lt;
         final state = ref.watch(radioPlayerProvider);
         final playlist = state.playlist;
         final activeIndex = state.stationIndex;
@@ -28,7 +31,7 @@ void showStationSheet(
               width: 36,
               height: 3,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: c.ink3.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -36,10 +39,7 @@ void showStationSheet(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 'Estaciones de Radio',
-                style: GoogleFonts.hankenGrotesk(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+                style: LTType.title(c.ink, size: 16),
               ),
             ),
             Flexible(
@@ -58,25 +58,18 @@ void showStationSheet(
                         Text(s.country, style: const TextStyle(fontSize: 28)),
                     title: Text(
                       s.name,
-                      style: GoogleFonts.hankenGrotesk(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color:
-                            active ? AppColors.primary : AppColors.textPrimary,
+                      style: LTType.body(
+                        active ? c.coral : c.ink,
+                        size: 14,
+                        weight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
                       '${s.frequency} · ${s.genre}',
-                      style: GoogleFonts.hankenGrotesk(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: LTType.caption(c.ink2, size: 12),
                     ),
                     trailing: active
-                        ? const Icon(
-                            Icons.check_circle,
-                            color: AppColors.primary,
-                          )
+                        ? Icon(Icons.check_circle, color: c.coral)
                         : null,
                   );
                 },

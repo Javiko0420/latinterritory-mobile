@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 /// Animated equalizer bars shown while radio is playing.
 class LtEqBars extends StatefulWidget {
-  const LtEqBars({super.key});
+  const LtEqBars({super.key, this.color = Colors.white});
+
+  /// Color de las barras; blanco por defecto (superficies coral del Home).
+  final Color color;
 
   @override
   State<LtEqBars> createState() => _LtEqBarsState();
@@ -45,7 +48,7 @@ class _LtEqBarsState extends State<LtEqBars>
               height: h,
               margin: const EdgeInsets.only(right: 2),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: widget.color.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(1),
               ),
             );
