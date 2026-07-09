@@ -72,6 +72,9 @@
 		<string>LatinTerritory needs access to your camera to take photos for your business or event.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>LatinTerritory uses your location to show the weather for your city and nearby businesses and events.</string>
+		<!-- Requerido por App Store aunque no se pida "Always": geolocator referencia esa API -->
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>LatinTerritory uses your location to show the weather for your city and nearby businesses and events.</string>
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<!-- Permite HTTP a localhost (backend de desarrollo) -->
