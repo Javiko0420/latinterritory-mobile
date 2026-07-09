@@ -1,6 +1,10 @@
 # Release Notes — LatinTerritory Mobile
 
-## 1.1.0 (build 5) — 2026-07-09
+## 1.1.0 (build 7) — 2026-07-09
+
+> Build 5 y 6 quedaron quemados: App Store Connect ya tenía un build "6"
+> registrado (subidas previas del train 1.0.1 no reflejadas en el repo), y
+> exige que el bundle version sea siempre mayor al último subido.
 
 Cambios desde 1.0.1+4 (2026-06-14):
 
