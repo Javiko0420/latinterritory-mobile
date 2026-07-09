@@ -25,23 +25,25 @@ Cambios desde 1.0.1+4 (2026-06-14):
 
 ## Store "What's New" (para copiar/pegar)
 
-### Español (≤500 caracteres, Play Store / App Store)
+### Español (389/500 caracteres, Play Store / App Store)
 ```
 ¡LatinTerritory se renueva!
 
-• Nuevo diseño: colores, tipografía y navegación completamente renovados
+• Nuevo diseño: colores, tipografía y navegación renovados, con tema claro y oscuro
 • Mundial 2026: sigue los partidos en vivo, grupos y eliminatorias en Deportes
-• Foro del día: descubre la conversación destacada de la comunidad desde el inicio
+• Foro del día: la conversación destacada de la comunidad, directo en el inicio
+• Reproductor de radio flotante renovado, adaptado al nuevo diseño
 • Mejoras de accesibilidad y correcciones menores
 ```
 
-### English (≤500 characters)
+### English (370/500 characters)
 ```
 LatinTerritory gets a fresh new look!
 
-• New design: fully refreshed colors, typography and navigation
+• New design: refreshed colors, typography and navigation, with light and dark themes
 • World Cup 2026: follow live matches, groups and knockouts in Sports
-• Forum of the day: discover the community's featured conversation right from Home
+• Forum of the day: the community's featured conversation right on Home
+• Redesigned floating radio player, matching the new look
 • Accessibility improvements and minor fixes
 ```
 
