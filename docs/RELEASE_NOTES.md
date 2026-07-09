@@ -49,6 +49,52 @@ LatinTerritory gets a fresh new look!
 
 ---
 
+## App Store "Novedades" (límite 4000 caracteres — versión extendida)
+
+### Español
+```
+¡LatinTerritory se renueva!
+
+NUEVO DISEÑO
+La app estrena una imagen completamente renovada: nueva tipografía, colores y navegación, con tema claro y oscuro que se adapta a tu preferencia.
+
+MUNDIAL 2026
+Vive el Mundial desde la sección Deportes: partidos en vivo, fase de grupos y eliminatorias.
+
+FORO DEL DÍA
+La conversación destacada de la comunidad ahora te espera directo en el inicio.
+
+RADIO
+El reproductor flotante de radio se adaptó al nuevo diseño y luce increíble en ambos temas.
+
+Además, esta versión incluye mejoras de accesibilidad y correcciones menores.
+
+¿Te gusta la nueva imagen? Déjanos una reseña — nos ayuda muchísimo a seguir creciendo. 🌎
+```
+
+### English
+```
+LatinTerritory gets a fresh new look!
+
+NEW DESIGN
+The app debuts a fully refreshed look: new typography, colors and navigation, with light and dark themes that adapt to your preference.
+
+WORLD CUP 2026
+Experience the World Cup from the Sports section: live matches, group stage and knockouts.
+
+FORUM OF THE DAY
+The community's featured conversation now greets you right on Home.
+
+RADIO
+The floating radio player was redesigned to match the new look, and it shines in both themes.
+
+This version also includes accessibility improvements and minor fixes.
+
+Enjoying the new look? Leave us a review — it helps us keep growing. 🌎
+```
+
+---
+
 ## Historial
 
 ### 1.0.1 (build 4) — 2026-06-14
