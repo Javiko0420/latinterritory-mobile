@@ -95,6 +95,44 @@ Enjoying the new look? Leave us a review — it helps us keep growing. 🌎
 
 ---
 
+## App Review Notes (App Store Connect → App Review Information → Notes)
+
+> Recordatorio: crear una cuenta demo real y ponerla en los campos "Sign-In
+> Information" (marcar el checkbox "Sign-in required").
+
+```
+Thank you for reviewing LatinTerritory 1.1.0.
+
+ABOUT THE APP
+LatinTerritory is a community platform for Latinos living in Australia: a business directory, job listings, community events, forums, live Latin radio, weather and currency exchange rates. The app is available in Spanish and English.
+
+WHAT'S NEW IN 1.1.0
+- Complete visual redesign: new typography, colors and navigation, with light and dark themes.
+- Temporary "World Cup 2026" section under Sports (live scores, group stage, knockout bracket). It is informational only and will be remotely disabled once the tournament ends.
+- New "Forum of the day" widget on the Home screen.
+- Redesigned floating radio mini player.
+
+ACCOUNT & LOGIN
+- Most content can be browsed WITHOUT an account: Home, Businesses, Jobs, Events, Weather, Exchange Rates, Sports and Radio.
+- An account is only required to participate in Forums and to publish businesses, events or job listings.
+- Sign in with Apple is supported, in addition to email/password.
+- A demo account is provided in the App Review Information fields.
+- Account deletion is available in-app: Profile → Delete Account.
+
+LOCATION PERMISSION
+The app only requests "While Using the App" location access, used to show local weather and nearby businesses/events. The NSLocationAlwaysAndWhenInUseUsageDescription key is present solely because our location SDK (geolocator) statically references that API; the app never requests "Always" authorization.
+
+BACKGROUND AUDIO
+The Radio feature streams live Latin radio stations and continues playing in the background (UIBackgroundModes: audio). To test: open Radio, play a station, then lock the device — playback continues and playback controls appear on the lock screen.
+
+USER-GENERATED CONTENT
+Forum posts and comments can be reported in-app by authenticated users (report option on each post/comment), and publishing any content requires an account.
+
+If you have any questions, please contact us through the support information provided. Thank you!
+```
+
+---
+
 ## Historial
 
 ### 1.0.1 (build 4) — 2026-06-14
