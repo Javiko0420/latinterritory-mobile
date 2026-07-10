@@ -21,6 +21,14 @@
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
 
+# google_sign_in 7.x — Credential Manager (androidx.credentials) + googleid.
+# R8 must not strip these: GoogleIdTokenCredential is parsed via reflection
+# from the credential bundle, and the play-services bridge is loaded lazily.
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** { *; }
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-dontwarn androidx.credentials.**
+
 # connectivity_plus
 -keep class dev.fluttercommunity.plus.connectivity.** { *; }
 
