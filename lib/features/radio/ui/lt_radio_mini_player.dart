@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -12,11 +13,70 @@ import 'package:latinterritory/shared/widgets/lt_eq_bars.dart';
 const double kPlayerWidth = 300.0;
 const double kPlayerHeight = 72.0;
 const double kFabSize = 52.0;
+
+/// Reserva de diseño del bottom nav flotante: no es un inset del sistema, por
+/// eso se mantiene constante en lugar de derivarse de MediaQuery.
 const double kNavBarMargin = 96.0;
-const double kTopSafeArea = 50.0;
+
+/// Separación mínima entre el player y las safe areas del sistema.
+const double kSafeAreaMargin = 8.0;
 
 // Segundo stop del gradiente coral, igual al de la card de radio del Home.
 const Color _kCoralDeep = Color(0xFFA8442F);
+
+/// Límites de posición del mini player para las métricas de pantalla actuales.
+///
+/// Se recalculan en cada build porque dependen de `MediaQuery`: Android 16
+/// ignora el lock a portrait en pantallas grandes (sw >= 600dp), así que rotar
+/// o entrar en split-screen puede dejar fuera de pantalla un offset que era
+/// válido con las métricas anteriores. En landscape el display cutout pasa al
+/// costado, por eso los cuatro bordes salen de `viewPadding`.
+@visibleForTesting
+class PlayerBounds {
+  const PlayerBounds({
+    required this.minX,
+    required this.maxX,
+    required this.minY,
+    required this.maxY,
+  });
+
+  /// [size] es el tamaño del widget posicionado: card expandida o FAB.
+  factory PlayerBounds.of({
+    required Size screen,
+    required EdgeInsets viewPadding,
+    required Size size,
+  }) {
+    final minX = viewPadding.left + kSafeAreaMargin;
+    final minY = viewPadding.top + kSafeAreaMargin;
+    // math.max evita que clamp() reciba un rango invertido (lanzaría
+    // ArgumentError) cuando la ventana es más angosta o más corta que el propio
+    // player: split-screen, landscape en teléfono.
+    return PlayerBounds(
+      minX: minX,
+      maxX: math.max(
+        minX,
+        screen.width - size.width - viewPadding.right - kSafeAreaMargin,
+      ),
+      minY: minY,
+      // kNavBarMargin ya reserva el hueco inferior; viewPadding.bottom es el
+      // inset del sistema (gesture bar) y se suma encima.
+      maxY: math.max(
+        minY,
+        screen.height - size.height - kNavBarMargin - viewPadding.bottom,
+      ),
+    );
+  }
+
+  final double minX;
+  final double maxX;
+  final double minY;
+  final double maxY;
+
+  Offset clamp(Offset position) => Offset(
+        position.dx.clamp(minX, maxX),
+        position.dy.clamp(minY, maxY),
+      );
+}
 
 /// Floating draggable radio mini player rendered in the app overlay.
 class LtRadioMiniPlayer extends ConsumerWidget {
@@ -25,26 +85,44 @@ class LtRadioMiniPlayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(radioPlayerProvider);
-    final notifier = ref.read(radioPlayerProvider.notifier);
-    final screen = MediaQuery.of(context).size;
 
     if (state.mode == RadioPlayerMode.hidden) {
       return const SizedBox.shrink();
     }
 
+    final notifier = ref.read(radioPlayerProvider.notifier);
+    final screen = MediaQuery.sizeOf(context);
+    final minimized = state.mode == RadioPlayerMode.minimized;
+    final bounds = PlayerBounds.of(
+      screen: screen,
+      viewPadding: MediaQuery.viewPaddingOf(context),
+      size: minimized
+          ? const Size(kFabSize, kFabSize)
+          : const Size(kPlayerWidth, kPlayerHeight),
+    );
+
+    // El clamp se aplica a una variable LOCAL a propósito: mutar estado de
+    // Riverpod dentro de build() provoca rebuild loops. El estado persistido se
+    // autocorrige en el próximo onPanUpdate, que clampea con estos mismos
+    // límites.
+    final position = bounds.clamp(state.position);
+
     return Positioned(
-      left: state.position.dx,
-      top: state.position.dy,
-      child: state.mode == RadioPlayerMode.minimized
+      left: position.dx,
+      top: position.dy,
+      child: minimized
           ? _MinimizedFab(
               state: state,
               notifier: notifier,
+              position: position,
+              bounds: bounds,
               screen: screen,
             )
           : _ExpandedPlayer(
               state: state,
               notifier: notifier,
-              screen: screen,
+              position: position,
+              bounds: bounds,
             ),
     );
   }
@@ -54,23 +132,23 @@ class _ExpandedPlayer extends StatelessWidget {
   const _ExpandedPlayer({
     required this.state,
     required this.notifier,
-    required this.screen,
+    required this.position,
+    required this.bounds,
   });
 
   final RadioPlayerState state;
   final RadioPlayerNotifier notifier;
-  final Size screen;
+
+  /// Posición ya clampeada del frame actual: el drag parte de lo que se ve, no
+  /// del offset almacenado (que puede haber quedado fuera de pantalla).
+  final Offset position;
+  final PlayerBounds bounds;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onPanUpdate: (details) {
-        final newX = (state.position.dx + details.delta.dx)
-            .clamp(0.0, screen.width - kPlayerWidth);
-        final newY = (state.position.dy + details.delta.dy)
-            .clamp(kTopSafeArea, screen.height - kPlayerHeight - kNavBarMargin);
-        notifier.updatePosition(Offset(newX, newY));
-      },
+      onPanUpdate: (details) =>
+          notifier.updatePosition(bounds.clamp(position + details.delta)),
       child: _PlayerCard(state: state, notifier: notifier),
     );
   }
@@ -285,11 +363,17 @@ class _MinimizedFab extends StatelessWidget {
   const _MinimizedFab({
     required this.state,
     required this.notifier,
+    required this.position,
+    required this.bounds,
     required this.screen,
   });
 
   final RadioPlayerState state;
   final RadioPlayerNotifier notifier;
+
+  /// Posición ya clampeada del frame actual (ver [_ExpandedPlayer.position]).
+  final Offset position;
+  final PlayerBounds bounds;
   final Size screen;
 
   @override
@@ -297,13 +381,8 @@ class _MinimizedFab extends StatelessWidget {
     final c = context.lt;
     return GestureDetector(
       onTap: notifier.expand,
-      onPanUpdate: (details) {
-        final newX = (state.position.dx + details.delta.dx)
-            .clamp(0.0, screen.width - kFabSize);
-        final newY = (state.position.dy + details.delta.dy)
-            .clamp(kTopSafeArea, screen.height - kFabSize - kNavBarMargin);
-        notifier.updatePosition(Offset(newX, newY));
-      },
+      onPanUpdate: (details) =>
+          notifier.updatePosition(bounds.clamp(position + details.delta)),
       onPanEnd: (_) => notifier.snapToEdge(screen),
       child: Stack(
         clipBehavior: Clip.none,
