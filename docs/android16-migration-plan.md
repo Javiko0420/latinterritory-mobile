@@ -1,6 +1,6 @@
 # Migración Android 16 (API 36) — latinterritory-mobile
 
-> Rama: `chore/android-16-api-36` · Deadline Play: **31-ago-2026** · Estado: plan aprobado, ejecución pendiente
+> Rama: `chore/android-16-api-36` · Deadline Play: **31-ago-2026** · Estado: Fases 0-2 completadas (`64c0875`, `e131818`); Fases 3-4 pendientes
 
 ## Contexto
 
@@ -49,13 +49,13 @@ Archivo: `android/app/build.gradle.kts` (líneas 19, 33, 34).
 - Verificar: `flutter build apk --debug` + smoke en emulador API 36.
 - Rollback: revert del commit.
 
-- [ ] Cambios aplicados
-- [ ] Build debug OK
-- [ ] Commit: `chore(android): target API 36, pin compile/min SDK`
+- [x] Cambios aplicados
+- [x] Build debug OK
+- [x] Commit: `chore(android): target API 36, pin compile/min SDK` (`64c0875`)
 
 ## Fase 2 — Resiliencia del MiniPlayer en pantallas grandes (B3, ejecutable)
 
-**Problema:** en tablets/foldables con API 36 el lock a portrait de `main.dart:18` se ignora → rotación y split-screen posibles. El offset draggable del MiniPlayer vive en estado Riverpod (`radio_player_provider.dart:15,147` — no persistido a disco, pero estable durante la sesión), con default `Offset(16, 600)` (`:24`) y posición calculada una sola vez al expandir (`:115-117`). El drag se clampea contra constantes hardcodeadas `kTopSafeArea = 50` / `kNavBarMargin = 96` (`lt_radio_mini_player.dart:15-16`). Si el tamaño disponible cambia, un offset válido puede quedar fuera de pantalla y el control se vuelve inalcanzable.
+**Problema:** en tablets/foldables con API 36 el lock a portrait de `main.dart:18` se ignora → rotación y split-screen posibles. El offset draggable del MiniPlayer vive en estado Riverpod (`lib/features/radio/providers/radio_player_provider.dart:15,147` — no persistido a disco, pero estable durante la sesión), con default `Offset(16, 600)` (`:24`) y posición calculada una sola vez al expandir (`:115-117`). El drag se clampea contra constantes hardcodeadas `kTopSafeArea = 50` / `kNavBarMargin = 96` (`lt_radio_mini_player.dart:15-16`). Si el tamaño disponible cambia, un offset válido puede quedar fuera de pantalla y el control se vuelve inalcanzable.
 
 **Cambios:**
 
@@ -78,19 +78,24 @@ Archivo: `android/app/build.gradle.kts` (líneas 19, 33, 34).
    // }); // nunca inline en build()
    ```
 
-   `build()` se re-ejecuta en cada cambio de métricas porque depende de `MediaQuery`, así que no hace falta `WidgetsBindingObserver`. El mismo clamp se aplica al calcular la posición al expandir (`radio_player_provider.dart:115-117`).
+   `build()` se re-ejecuta en cada cambio de métricas porque depende de `MediaQuery`, así que no hace falta `WidgetsBindingObserver`.
 
-2. **Safe areas derivadas de MediaQuery** — reemplazar `kTopSafeArea = 50` por `MediaQuery.viewPaddingOf(context).top + margen` y sumar `viewPadding.bottom` al límite inferior. `kNavBarMargin = 96` se mantiene como constante: es la reserva de diseño del bottom nav, no un inset del sistema.
+   **Descartado por diseño:** replicar el clamp al calcular la posición al expandir (`lib/features/radio/providers/radio_player_provider.dart:115-117`) y propagar `viewPadding` desde su único call site (`lib/features/radio/ui/radio_screen.dart:51`). Obligaba a duplicar `kPlayerHeight`/`kNavBarMargin` en la capa de estado —con riesgo de drift entre capas— y a añadir un parámetro público al notifier, a cambio de ~16px en el primer frame: el clamp de `build()` corrige esa posición igual antes de pintar. **El clamp de `build()` queda como única fuente de verdad del posicionamiento**; ni el provider ni `radio_screen.dart` se tocaron.
 
-**Nota de alcance:** esto toca Dart compartido — lo exige estrictamente el behaviour change B3. Es neutral para iOS y mejora iPad; por eso V8 incluye smoke tests iOS.
+2. **Safe areas derivadas de MediaQuery** — reemplazar `kTopSafeArea = 50` por `MediaQuery.viewPaddingOf(context).top + margen` y sumar `viewPadding.bottom` al límite inferior. Se añadieron además `viewPadding.left/right` a los límites horizontales: en landscape —ahora alcanzable en sw≥600dp— el display cutout se mueve al costado, que es el escenario B3 exacto. `kNavBarMargin = 96` se mantiene como constante: es la reserva de diseño del bottom nav, no un inset del sistema.
+
+3. **Saneo de los límites** — los cuatro bordes pasan por `math.max`. Sin eso, `clamp(min, max)` lanza `ArgumentError` cuando la ventana es más corta o angosta que el propio player (split-screen, landscape en teléfono): justo los modos que abre B3.
+
+**Nota de alcance:** esto toca Dart compartido — lo exige estrictamente el behaviour change B3. Es neutral para iOS y mejora iPad; por eso V8 incluye smoke tests iOS. **Alcance real de la ejecución: un solo archivo de producción** (`lib/features/radio/ui/lt_radio_mini_player.dart`) más un test nuevo (`test/features/radio/player_bounds_test.dart`, 5 casos sobre los límites numéricos de `PlayerBounds.of()`; sin widget tests).
 
 - Riesgo: **medio** (lógica de posicionamiento). Rollback: revert del commit.
 - Verificar: `flutter test` + rotar emulador tablet con radio sonando; el player permanece visible y arrastrable.
 
-- [ ] Re-clamp local en build
-- [ ] Safe areas desde MediaQuery
-- [ ] Tests verdes
-- [ ] Commit: `fix(radio): re-clamp mini player offset on metrics change, derive safe areas from MediaQuery`
+- [x] Re-clamp local en build (`PlayerBounds`, `@visibleForTesting`)
+- [x] Safe areas desde MediaQuery (los cuatro bordes, con saneo `math.max`)
+- [x] Tests verdes: `flutter analyze` 104 (sin crecer) · `flutter test` 77/77
+- [x] Commit: `fix(radio): re-clamp mini player offset on metrics change, derive safe areas from MediaQuery` (`e131818`)
+- [ ] Validación manual en tablet/foldable pendiente → V8
 
 **Regla de decisión (contingencia B3):** si el smoke test de tablet/foldable falla igualmente → aplicar en `<application>` del manifest:
 
@@ -135,11 +140,12 @@ Commit: `docs(android): record API 36 behaviour-change audit results` (checkboxe
     -k "system-images;android-36;google_apis_playstore;arm64-v8a"
   ```
 - **V1.** `flutter clean && flutter pub get`
-- **V2.** `flutter analyze` — baseline esperada: 106 issues (no debe crecer)
-- **V3.** `flutter test` — suite completa verde
+- **V2.** `flutter analyze` — baseline **104** issues, no debe crecer (la cifra de 106 documentada antes estaba desactualizada)
+- **V3.** `flutter test` — baseline **77 tests** verdes: **72** antes de la Fase 2 (el 66 documentado antes estaba desactualizado) + 5 de `test/features/radio/player_bounds_test.dart`
+- Ambas baselines medidas el 27-jul-2026 sobre árbol limpio: la de `analyze` en `64c0875` antes de tocar código, la de `test` tras `e131818`.
 - **V4.** `flutter pub upgrade --major-versions --dry-run` — SOLO reporte informativo para `chore/deps-post-api36`; no aplicar nada
 - **V5.** `flutter build apk --debug` + smoke en `Medium_Phone_API_36.1`
-- **V6.** Build release con el comando real del proyecto (sin flags de obfuscación — el proceso actual no las usa):
+- **V6.** Build release con el comando real del proyecto (sin flags de obfuscación — el proceso actual no las usa; ver el follow-up `chore/release-obfuscation`):
   ```bash
   flutter build appbundle --release
   # Artefacto: build/app/outputs/bundle/release/app-release.aab (~70MB)
@@ -176,9 +182,15 @@ Commit: `docs(android): record API 36 behaviour-change audit results` (checkboxe
 - **V10.** Subir el AAB de V6 (mismo artefacto verificado en V7) al track de closed testing; revisar Pre-launch report (incluye tablets → segunda validación de B3)
 - **V11.** Merge: push de `chore/android-16-api-36` + PR a `main` cuando closed testing pase; sin tag. El workflow `claude-code-review.yml` revisará el PR automáticamente — esperado y benigno.
 
-## Follow-up post-merge (rama separada, NO en esta)
+## Follow-ups (out of scope, post-merge)
 
-`chore/deps-post-api36` — después de que closed testing pase: `flutter pub upgrade` (patches disponibles: `audio_service 0.18.19`, `connectivity_plus 7.2.0`, `flutter_secure_storage 10.3.1`, `google_sign_in_android 7.2.15`…) + evaluación del dry-run de majors reportado en V4. Así el AAB de la migración contiene exactamente una variable.
+Nada de esto entra en `chore/android-16-api-36`: el AAB de la migración debe contener exactamente una variable. Ninguno bloquea el release ni la validación B3.
+
+- **`snapToEdge(bounds.minX, bounds.maxX)`** — hoy `snapToEdge(Size)` (`lib/features/radio/providers/radio_player_provider.dart:149`) hace snap contra el ancho crudo e ignora `viewPadding.left/right`, así que en landscape apunta a aparcar el FAB bajo un cutout lateral. **No es visible tras la Fase 2:** el clamp de `build()` corre aguas abajo y corrige la posición antes de pintar. Residuales: el estado guarda el valor sin clampear hasta el siguiente drag (desfase estado ↔ render), y el gap del lado del cutout queda mayor que el del lado limpio (asimetría cosmética del snap). Pasarle los límites ya calculados elimina ambos y unifica los márgenes. **Diferido porque cambia la firma pública del notifier.**
+- **Unificar las constantes de geometría duplicadas** — el `fabSize = 52.0` local de `snapToEdge` es una tercera copia de `kFabSize`, y su margen `10.0` convive con `kSafeAreaMargin = 8.0` sin que ninguno sea la fuente de verdad.
+- **`chore/deps-post-api36`** — tras aprobar closed testing: `flutter pub upgrade` de patches de plugins (`audio_service 0.18.19`, `connectivity_plus 7.2.0`, `flutter_secure_storage 10.3.1`, `google_sign_in_android 7.2.15`…) + evaluación del dry-run de majors reportado en V4.
+- **`chore/release-obfuscation`** — `--obfuscate --split-debug-info` lo exigen los requisitos de seguridad del proyecto, pero el build de release actual no los usa (ver V6). Cambia los símbolos de los crash reports, así que necesita su propio ciclo de validación y archivar los symbol maps.
+- **`chore/dart-format-tall-style`** — el repo es anterior al formateo tall-style de Dart 3.12: `dart format` reescribe archivos que nadie tocó (`main.dart`, `radio_screen.dart`, el propio provider…). Reformatear debe ser un commit aislado, nunca mezclado con cambios funcionales.
 
 ## CI / GitHub Actions (hallazgos)
 
@@ -186,6 +198,6 @@ Commit: `docs(android): record API 36 behaviour-change audit results` (checkboxe
 
 ## Restricciones respetadas
 
-- Android-first: cambios en `build.gradle.kts` y (solo por exigencia estricta de B3) `lt_radio_mini_player.dart` + `radio_player_provider.dart`, neutrales para iOS (con smoke tests iOS en V8). Manifest solo si se activa la contingencia B3.
+- Android-first: cambios en `build.gradle.kts` y (solo por exigencia estricta de B3) `lib/features/radio/ui/lt_radio_mini_player.dart` — el provider quedó intacto—, neutrales para iOS (con smoke tests iOS en V8). Manifest solo si se activa la contingencia B3.
 - Cero backend, cero upgrades de toolchain, cero dependencias en esta rama.
 - Rollback global: `git checkout main && git branch -D chore/android-16-api-36`.
