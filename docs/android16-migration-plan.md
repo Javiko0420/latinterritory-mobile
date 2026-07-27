@@ -95,7 +95,7 @@ Archivo: `android/app/build.gradle.kts` (líneas 19, 33, 34).
 - [x] Safe areas desde MediaQuery (los cuatro bordes, con saneo `math.max`)
 - [x] Tests verdes: `flutter analyze` 104 (sin crecer) · `flutter test` 77/77
 - [x] Commit: `fix(radio): re-clamp mini player offset on metrics change, derive safe areas from MediaQuery` (`e131818`)
-- [ ] Validación manual en tablet/foldable pendiente → V8
+- [x] Validación manual pasada: tablet rotation, split-screen, FAB drag en landscape, phone gesture-nav y 3-button, iPhone notch, iPad — todo verde. B3 validado empíricamente; contingencia `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` **no aplicada**.
 
 **Regla de decisión (contingencia B3):** si el smoke test de tablet/foldable falla igualmente → aplicar en `<application>` del manifest:
 
@@ -107,14 +107,14 @@ y **shippear de todos modos** — no se retrasa el release; los layouts se arreg
 
 ## Fase 3 — Auditoría de behaviour changes API 36
 
-- [ ] **B1 · Edge-to-edge obligatorio → YA ACTIVO.** Ningún `styles.xml` usa `windowOptOutEdgeToEdgeEnforcement`; desde targetSdk 35 los testers ya ven la app edge-to-edge — API 36 solo elimina un opt-out que no usamos. Insets bien manejados: bottom nav en `SafeArea(top:false)` + `Positioned(bottom:12)` (`lt_main_scaffold.dart:66`, reserva de 96px en `:31`); 29 archivos con `SafeArea`; manifest `adjustResize`. El riesgo residual de cutouts lo resuelve la Fase 2.
-- [ ] **B2 · Predictive back → no afectado.** Cero `WillPopScope`/`PopScope`/`BackButtonListener`/`onPopInvoked` en `lib/`; GoRouter sin interceptores; solo `Navigator.maybePop` (`publish_screen.dart:39`, `world_cup_screen.dart:33`), compatible. Verificar animación en V8.
-- [ ] **B3 · Orientación/resizability ignoradas en sw≥600dp → resuelto en Fase 2** + regla de decisión con opt-out.
-- [ ] **B4 · Intent hardening / matching estricto → no afectado.** Sin deep links ni schemes custom (solo MAIN/LAUNCHER + MEDIA_BUTTON + MediaBrowserService); `google_sign_in` 7.x usa Credential Manager, sin redirect activities (R8 cubierto en `proguard-rules.pro:27-30`); Apple Sign-In gated a iOS (`login_screen.dart:250`).
-- [ ] **B5 · FGS/JobScheduler para radio → bajo.** Servicio tipado `mediaPlayback` + permiso `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (manifest:5,45); playback con MediaSession activa exento de quotas. Verificar radio + lock screen + kill/restore en V8.
-- [ ] **B6 · elegantTextHeight / métricas → mínimo.** Hanken Grotesk (script latino); cubierto por revisión visual.
-- [ ] **B7 · 16 KB page size → ya cumplido.** Play lo exige desde nov-2025 para targetSdk ≥35 y 1.1.0+7 ya está en closed testing; ningún plugin del lockfile embebe `.so` propios (todos Java/Kotlin) — solo `libflutter.so`/`libapp.so`, alineados por Flutter ≥3.27 / AGP ≥8.5.1. Se verifica igual en V7.
-- [ ] **B8 · APIs de color de system bars deprecadas → no-ops inofensivos, sin cambio de código.** En API 36, `Window.setStatusBarColor()`/`setNavigationBarColor()`/`setNavigationBarDividerColor()` son no-ops silenciosos. Inventario completo:
+- [x] **B1 · Edge-to-edge obligatorio → YA ACTIVO.** Ningún `styles.xml` usa `windowOptOutEdgeToEdgeEnforcement`; desde targetSdk 35 los testers ya ven la app edge-to-edge — API 36 solo elimina un opt-out que no usamos. Insets bien manejados: bottom nav en `SafeArea(top:false)` + `Positioned(bottom:12)` (`lt_main_scaffold.dart:66`, reserva de 96px en `:31`); 29 archivos con `SafeArea`; manifest `adjustResize`. El riesgo residual de cutouts lo resuelve la Fase 2.
+- [x] **B2 · Predictive back → no afectado.** Cero `WillPopScope`/`PopScope`/`BackButtonListener`/`onPopInvoked` en `lib/`; GoRouter sin interceptores; solo `Navigator.maybePop` (`publish_screen.dart:39`, `world_cup_screen.dart:33`), compatible. Verificar animación en V8.
+- [x] **B3 · Orientación/resizability ignoradas en sw≥600dp → resuelto en Fase 2** + regla de decisión con opt-out.
+- [x] **B4 · Intent hardening / matching estricto → no afectado.** Sin deep links ni schemes custom (solo MAIN/LAUNCHER + MEDIA_BUTTON + MediaBrowserService); `google_sign_in` 7.x usa Credential Manager, sin redirect activities (R8 cubierto en `proguard-rules.pro:27-30`); Apple Sign-In gated a iOS (`login_screen.dart:250`).
+- [x] **B5 · FGS/JobScheduler para radio → bajo.** Servicio tipado `mediaPlayback` + permiso `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (manifest:5,45); playback con MediaSession activa exento de quotas. Verificar radio + lock screen + kill/restore en V8.
+- [x] **B6 · elegantTextHeight / métricas → mínimo.** Hanken Grotesk (script latino); cubierto por revisión visual.
+- [x] **B7 · 16 KB page size → ya cumplido.** Play lo exige desde nov-2025 para targetSdk ≥35 y 1.1.0+7 ya está en closed testing; ningún plugin del lockfile embebe `.so` propios (todos Java/Kotlin) — solo `libflutter.so`/`libapp.so`, alineados por Flutter ≥3.27 / AGP ≥8.5.1. Se verifica igual en V7.
+- [x] **B8 · APIs de color de system bars deprecadas → no-ops inofensivos, sin cambio de código.** En API 36, `Window.setStatusBarColor()`/`setNavigationBarColor()`/`setNavigationBarDividerColor()` son no-ops silenciosos. Inventario completo:
 
   | Hit | Clasificación |
   |---|---|
