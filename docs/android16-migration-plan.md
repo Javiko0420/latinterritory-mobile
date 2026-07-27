@@ -113,7 +113,18 @@ y **shippear de todos modos** — no se retrasa el release; los layouts se arreg
 - [x] **B4 · Intent hardening / matching estricto → no afectado.** Sin deep links ni schemes custom (solo MAIN/LAUNCHER + MEDIA_BUTTON + MediaBrowserService); `google_sign_in` 7.x usa Credential Manager, sin redirect activities (R8 cubierto en `proguard-rules.pro:27-30`); Apple Sign-In gated a iOS (`login_screen.dart:250`).
 - [x] **B5 · FGS/JobScheduler para radio → bajo.** Servicio tipado `mediaPlayback` + permiso `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (manifest:5,45); playback con MediaSession activa exento de quotas. Verificar radio + lock screen + kill/restore en V8.
 - [x] **B6 · elegantTextHeight / métricas → mínimo.** Hanken Grotesk (script latino); cubierto por revisión visual.
-- [x] **B7 · 16 KB page size → ya cumplido.** Play lo exige desde nov-2025 para targetSdk ≥35 y 1.1.0+7 ya está en closed testing; ningún plugin del lockfile embebe `.so` propios (todos Java/Kotlin) — solo `libflutter.so`/`libapp.so`, alineados por Flutter ≥3.27 / AGP ≥8.5.1. Se verifica igual en V7.
+- [x] **B7 · 16 KB page size → cumplido, verificado contra el AAB de V6 (no contra el lockfile).** Play lo exige desde nov-2025 para targetSdk ≥35 y 1.1.0+7 ya está en closed testing. La afirmación original de este audit —"ningún plugin del lockfile embebe `.so` propios"— era incorrecta; corregida con la medición real de V7 (`llvm-readelf -l` sobre el AAB, alineación de segmentos LOAD):
+
+  | `.so` | ABIs | Alineación LOAD | Origen |
+  |---|---|---|---|
+  | `libflutter.so` | arm64-v8a, armeabi-v7a, x86_64 | `0x10000` (64 KB) | Flutter engine |
+  | `libapp.so` | arm64-v8a, x86_64 | `0x10000` (64 KB) | Flutter engine (AOT) |
+  | `libapp.so` | armeabi-v7a | `0x4000` (16 KB) | Flutter engine (AOT) — 32-bit, fuera del mandato de 16 KB |
+  | `libdatastore_shared_counter.so` | arm64-v8a, armeabi-v7a, x86_64 | `0x4000` (16 KB) | `shared_preferences_android` → `androidx.datastore:datastore` 1.1.7 (dependencia transitiva de AndroidX — el plugin no la declara directamente) |
+
+  Los cuatro segmentos relevantes a 64-bit quedan alineados a un múltiplo válido de 16 KB → cumple.
+
+  **Nota metodológica:** un plugin de Flutter puede introducir código nativo mediante una dependencia transitiva de AndroidX (aquí `datastore-core`, ajena al código propio de `shared_preferences_android`) sin que el lockfile de Dart lo revele. La inspección del lockfile **no es suficiente** — el cumplimiento de 16 KB debe verificarse contra el AAB ya construido (V7), nunca inferirse del lockfile. Repetir este chequeo en cada actualización de dependencias; aplica directamente a `chore/deps-post-api36`.
 - [x] **B8 · APIs de color de system bars deprecadas → no-ops inofensivos, sin cambio de código.** En API 36, `Window.setStatusBarColor()`/`setNavigationBarColor()`/`setNavigationBarDividerColor()` son no-ops silenciosos. Inventario completo:
 
   | Hit | Clasificación |
@@ -188,7 +199,7 @@ Nada de esto entra en `chore/android-16-api-36`: el AAB de la migración debe co
 
 - **`snapToEdge(bounds.minX, bounds.maxX)`** — hoy `snapToEdge(Size)` (`lib/features/radio/providers/radio_player_provider.dart:149`) hace snap contra el ancho crudo e ignora `viewPadding.left/right`, así que en landscape apunta a aparcar el FAB bajo un cutout lateral. **No es visible tras la Fase 2:** el clamp de `build()` corre aguas abajo y corrige la posición antes de pintar. Residuales: el estado guarda el valor sin clampear hasta el siguiente drag (desfase estado ↔ render), y el gap del lado del cutout queda mayor que el del lado limpio (asimetría cosmética del snap). Pasarle los límites ya calculados elimina ambos y unifica los márgenes. **Diferido porque cambia la firma pública del notifier.**
 - **Unificar las constantes de geometría duplicadas** — el `fabSize = 52.0` local de `snapToEdge` es una tercera copia de `kFabSize`, y su margen `10.0` convive con `kSafeAreaMargin = 8.0` sin que ninguno sea la fuente de verdad.
-- **`chore/deps-post-api36`** — tras aprobar closed testing: `flutter pub upgrade` de patches de plugins (`audio_service 0.18.19`, `connectivity_plus 7.2.0`, `flutter_secure_storage 10.3.1`, `google_sign_in_android 7.2.15`…) + evaluación del dry-run de majors reportado en V4.
+- **`chore/deps-post-api36`** — tras aprobar closed testing: `flutter pub upgrade` de patches de plugins (`audio_service 0.18.19`, `connectivity_plus 7.2.0`, `flutter_secure_storage 10.3.1`, `google_sign_in_android 7.2.15`…) + evaluación del dry-run de majors reportado en V4. **Resultado medido de V4** (27-jul-2026, `--dry-run`, nada aplicado): 3 majors disponibles — `sign_in_with_apple` `^6.1.0`→`^8.1.0`, `google_fonts` `^6.2.1`→`^8.2.0`, `package_info_plus` `^9.0.0`→`^10.2.1` — más 82 dependencias menores/transitivas. Repetir el chequeo de 16 KB (V7) después de aplicar, dado el precedente de `datastore-core` documentado en B7.
 - **`chore/release-obfuscation`** — `--obfuscate --split-debug-info` lo exigen los requisitos de seguridad del proyecto, pero el build de release actual no los usa (ver V6). Cambia los símbolos de los crash reports, así que necesita su propio ciclo de validación y archivar los symbol maps.
 - **`chore/dart-format-tall-style`** — el repo es anterior al formateo tall-style de Dart 3.12: `dart format` reescribe archivos que nadie tocó (`main.dart`, `radio_screen.dart`, el propio provider…). Reformatear debe ser un commit aislado, nunca mezclado con cambios funcionales.
 
