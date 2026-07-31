@@ -182,11 +182,13 @@ Commit: `docs(android): record API 36 behaviour-change audit results` (checkboxe
     - [ ] Dark mode on/off
     - [ ] Teclado abierto en formularios (publish, login) — `adjustResize`
     - [ ] Radio por los 4 tabs + publish; lock screen controls; kill desde recientes con radio activa
-    - [ ] Google Sign-In completo en build release (R8)
+    - [x] Google Sign-In completo en build release (R8)
     - [ ] image_picker (cámara/galería) y geolocator (permiso runtime)
   - iOS (la Fase 2 toca Dart compartido que llegará a main y al próximo release de iOS, hoy live en producción):
     - [ ] iPhone simulator con notch: radio sonando, rotar, MiniPlayer alcanzable
     - [ ] iPad simulator: radio sonando, rotar, MiniPlayer alcanzable
+
+  **Resultado parcial (31-jul-2026), matriz manual de release build en dispositivo físico Android:** verificado bajo R8 — Google Sign-In vía Credential Manager, login email/password, persistencia de sesión tras kill de la app, radio con lock-screen controls, y publicación de imágenes. Solo el checkbox de Google Sign-In (R8) se marca arriba porque coincide 1:1 con un ítem de la matriz original; los demás ítems verificados (login email/password, persistencia de sesión, publicación de imágenes) no tenían checkbox propio en la matriz y se registran aquí en su lugar. **Pendiente antes de cerrar V8 por completo:** phone gesture-nav/3-button, back gesture predictivo, `Tablet_API_36` rotación/split-screen con radio (segunda validación de B3, ahora sobre release build), dark mode, teclado en formularios, radio en los 4 tabs + publish + kill-desde-recientes-con-radio-activa, geolocator, e iOS (iPhone/iPad simulator).
 - **V9.** Bump `pubspec.yaml`: `version: 1.1.0+7` → **`1.1.1+8`** · commit `chore(release): bump to 1.1.1+8 (target API 36)`
   - **Decisión de versión — se prefiere `1.1.1+8` sobre `1.1.0+8`:** `versionName` se comparte con iOS (pubspec único alimenta ambas plataformas), y la Fase 2 cambia Dart compartido que también llegará al próximo release de iOS — reutilizar `1.1.0` como versionName con contenido distinto rompería la trazabilidad entre tiendas. `1.1.1` refleja un patch real en ambas plataformas.
   - ⚠️ Antes de un futuro build iOS con este versionName: confirmar el último build number en App Store Connect (histórico: ASC tenía builds manuales que no están en git).
