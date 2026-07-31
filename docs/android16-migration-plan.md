@@ -174,21 +174,25 @@ Commit: `docs(android): record API 36 behaviour-change audit results` (checkboxe
   # Cada .so debe reportar únicamente 0x4000 (2^14 = 16384).
   # Si alguno muestra 0x1000: identificar el plugin dueño del .so y subirlo.
   ```
-- **V8 · Test matrix manual:**
-  - Android (emulador API 36 + dispositivo físico):
-    - [ ] Phone gesture-nav y 3-button nav: bottom nav + FAB sin solape con la barra del sistema
-    - [ ] Back gesture predictivo sobre el stack de GoRouter (detail → list → home → salir)
-    - [ ] `Tablet_API_36` (sw≥600dp): rotación a landscape y split-screen **con radio sonando** — el MiniPlayer se re-clampea y sigue alcanzable (valida Fase 2); si falla → regla de decisión B3 (opt-out + ship)
-    - [ ] Dark mode on/off
-    - [ ] Teclado abierto en formularios (publish, login) — `adjustResize`
-    - [ ] Radio por los 4 tabs + publish; lock screen controls; kill desde recientes con radio activa
-    - [x] Google Sign-In completo en build release (R8)
-    - [ ] image_picker (cámara/galería) y geolocator (permiso runtime)
-  - iOS (la Fase 2 toca Dart compartido que llegará a main y al próximo release de iOS, hoy live en producción):
-    - [ ] iPhone simulator con notch: radio sonando, rotar, MiniPlayer alcanzable
-    - [ ] iPad simulator: radio sonando, rotar, MiniPlayer alcanzable
+- **V8 · Test matrix manual — cobertura distribuida (31-jul-2026):** los behaviour changes de API 36 (B1-B8) dependen de correr sobre Android 16 real, no de si el build está ofuscado por R8 → se validaron en emulador. Las rutas sensibles a build de producción (Credential Manager, plugins nativos con código Java/Kotlin propio) requieren release → se validaron en dispositivo físico. No es un checklist único: es una matriz de cobertura por entorno.
 
-  **Resultado parcial (31-jul-2026), matriz manual de release build en dispositivo físico Android:** verificado bajo R8 — Google Sign-In vía Credential Manager, login email/password, persistencia de sesión tras kill de la app, radio con lock-screen controls, y publicación de imágenes. Solo el checkbox de Google Sign-In (R8) se marca arriba porque coincide 1:1 con un ítem de la matriz original; los demás ítems verificados (login email/password, persistencia de sesión, publicación de imágenes) no tenían checkbox propio en la matriz y se registran aquí en su lugar. **Pendiente antes de cerrar V8 por completo:** phone gesture-nav/3-button, back gesture predictivo, `Tablet_API_36` rotación/split-screen con radio (segunda validación de B3, ahora sobre release build), dark mode, teclado en formularios, radio en los 4 tabs + publish + kill-desde-recientes-con-radio-activa, geolocator, e iOS (iPhone/iPad simulator).
+  | Chequeo | Entorno | Build | Resultado |
+  |---|---|---|---|
+  | B3: `Tablet_API_36` rotación + split-screen con radio sonando | Emulador API 36 (Android 16) | debug | ✅ |
+  | Back gesture predictivo (stack GoRouter: detail → list → home → salir) | Emulador API 36 | debug | ✅ |
+  | Phone gesture-nav y 3-button nav (bottom nav + FAB sin solape) | Emulador API 36 | debug | ✅ |
+  | Dark mode on/off | Emulador API 36 | debug | ✅ |
+  | Teclado abierto en formularios (publish, login) — `adjustResize` | Emulador API 36 | debug | ✅ |
+  | Radio: 4 tabs + publish, lock screen controls, kill desde recientes | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | Geolocator (permiso runtime) | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | image_picker (cámara/galería) | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | Google Sign-In vía Credential Manager | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | Login email/password | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | Persistencia de sesión tras kill de la app | Galaxy Tab A8 físico | release (R8) | ✅ |
+  | iPhone simulator con notch: radio sonando, rotar, MiniPlayer alcanzable | iOS Simulator | debug | ✅ |
+  | iPad simulator: radio sonando, rotar, MiniPlayer alcanzable | iOS Simulator | debug | ✅ |
+
+  **Gap real, no cerrado por testing manual:** ningún dispositivo físico corriendo Android 16 ejecutó el build de **release**. El Galaxy Tab A8 valida R8 pero no corre Android 16; los emuladores API 36 validan los behaviour changes pero corren debug. Se cubre mediante el **Pre-launch report de Play** (incluye tablets), que ejecuta el AAB subido contra hardware real con Android 16.
 - **V9.** Bump `pubspec.yaml`: `version: 1.1.0+7` → **`1.1.1+8`** · commit `chore(release): bump to 1.1.1+8 (target API 36)`
   - **Decisión de versión — se prefiere `1.1.1+8` sobre `1.1.0+8`:** `versionName` se comparte con iOS (pubspec único alimenta ambas plataformas), y la Fase 2 cambia Dart compartido que también llegará al próximo release de iOS — reutilizar `1.1.0` como versionName con contenido distinto rompería la trazabilidad entre tiendas. `1.1.1` refleja un patch real en ambas plataformas.
   - ⚠️ Antes de un futuro build iOS con este versionName: confirmar el último build number en App Store Connect (histórico: ASC tenía builds manuales que no están en git).
