@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:latinterritory/core/config/app_config.dart';
 import 'package:latinterritory/core/constants/api_endpoints.dart';
 import 'package:latinterritory/core/storage/secure_storage.dart';
-import 'package:latinterritory/shared/utils/logger.dart';
 
 /// Dio interceptor that handles JWT authentication.
 ///
