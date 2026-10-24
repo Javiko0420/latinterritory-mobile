@@ -80,10 +80,15 @@
 			<!-- Permite HTTP a localhost (backend de desarrollo) -->
 			<key>NSAllowsLocalNetworking</key>
 			<true/>
-			<!-- Permite HTTP en streams de audio/radio (just_audio usa AVPlayer que requiere esto) -->
-			<!-- NSAllowsArbitraryLoadsInMedia fue deprecado en iOS 10; usar NSAllowsArbitraryLoads -->
-			<key>NSAllowsArbitraryLoads</key>
-			<true/>
+			<!-- HTTP solo para el stream de radio que no ofrece HTTPS; el resto exige TLS -->
+			<key>NSExceptionDomains</key>
+			<dict>
+				<key>streaming.radionacional.com.ar</key>
+				<dict>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
+				</dict>
+			</dict>
 		</dict>
 		<key>CFBundleURLTypes</key>
 		<array>
